@@ -58,7 +58,7 @@ const Lesson = ({ onFinish }) => {
                             Завершить урок
                         </Button>
                         //<Button className="btn btn-success mt-3" onClick={() => onFinish(50)}>
-                        //    ✅ Завершить урок
+                        //     ✅ Завершить урок
                         //</Button>
                     )}
 
