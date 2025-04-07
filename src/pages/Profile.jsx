@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+/*import React, { useEffect, useState } from 'react';
 import { Card, ProgressBar, Image, Form, Row, Col, Button } from 'react-bootstrap';
 import axios from 'axios';
 
@@ -16,13 +16,25 @@ const Profile = ({ theme }) => {
     const [avatar, setAvatar] = useState('');
     const [showAvatars, setShowAvatars] = useState(false);
 
+
+
     useEffect(() => {
-        // Пример запроса к API (замени на свой эндпоинт)
-        axios.get('/api/profile') // <--- заменишь на свой URL
+        axios.get('https://localhost:7137/api/Users')
             .then(res => {
                 const data = res.data;
-                setUser(data);
-                setAvatar(localStorage.getItem('avatar') || data.avatar);
+                const userData = {
+                    name: `${data.firstName} ${data.lastName}`,
+                    username: data.userName,
+                    telegramId: data.telegramId,
+                    avatar: data.avatar || defaultAvatars[0],
+                    xp: data.experience,
+                    maxXp: 20000, // Можно сделать динамически или вынести в конфиг
+                    course: 'Frontend на React',
+                    level: data.level
+                };
+
+                setUser(userData);
+                setAvatar(localStorage.getItem('avatar') || userData.avatar);
             })
             .catch(err => {
                 console.error('Ошибка загрузки профиля', err);
@@ -36,7 +48,8 @@ const Profile = ({ theme }) => {
                     lessonsPassed: 7,
                     totalLessons: 10,
                     correctAnswers: 48,
-                    totalAnswers: 60
+                    totalAnswers: 60,
+                    level: 1
                 });
                 setAvatar(defaultAvatars[0]);
             });
@@ -157,5 +170,63 @@ const Profile = ({ theme }) => {
         </div>
     );
 };
+
+export default Profile;*/
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+function Profile() {
+    const [userData, setUserData] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const tg = window.Telegram?.WebApp;
+        if (!tg) {
+            setError("Telegram WebApp is not available");
+            return;
+        }
+
+        tg.expand();
+
+        const user = tg.initDataUnsafe?.user;
+
+        if (user?.id) {
+            fetchUserFromBackend(user.id);
+        } else {
+            setError("User not found in Telegram context");
+        }
+    }, []);
+
+    const fetchUserFromBackend = async (telegramId) => {
+        try {
+            const response = await axios.get('http://localhost:5176/api/Users', {
+                params: {
+                    telegramId: telegramId
+                }
+            });
+
+            setUserData(response.data);
+        } catch (err) {
+            console.error("Failed to fetch user:", err);
+            setError("Failed to fetch user from backend");
+        }
+    };
+
+    return (
+        <div style={{ padding: '1rem' }}>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {userData ? (
+                <div>
+                    <h2>👋 Привет, {userData.firstName}!</h2>
+                    <p><strong>ID:</strong> {userData.telegramId}</p>
+                    {userData.userName && <p><strong>Username:</strong> @{userData.userName}</p>}
+                    {userData.lastName && <p><strong>Фамилия:</strong> {userData.lastName}</p>}
+                </div>
+            ) : !error ? (
+                <p>Загрузка...</p>
+            ) : null}
+        </div>
+    );
+}
 
 export default Profile;
