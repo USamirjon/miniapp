@@ -34,6 +34,7 @@ const Lesson = ({ onFinish }) => {
 
     const handleComplete = () => {
         setCompleted(true);
+        onFinish(50); // Здесь мы вызываем onFinish, передавая количество XP за завершение урока
     };
 
     const theme = localStorage.getItem('theme') || 'light';
@@ -54,12 +55,9 @@ const Lesson = ({ onFinish }) => {
                     <ProgressBar now={lesson.progress} label={`${lesson.progress}%`} className="my-3" />
 
                     {!completed && (
-                        <Button variant="primary" onClick={handleComplete}>
-                            Завершить урок
+                        <Button className="btn btn-success mt-3" onClick={handleComplete}>
+                            ✅ Завершить урок
                         </Button>
-                        //<Button className="btn btn-success mt-3" onClick={() => onFinish(50)}>
-                        //     ✅ Завершить урок
-                        //</Button>
                     )}
 
                     {completed && (

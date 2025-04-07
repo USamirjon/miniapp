@@ -1,45 +1,53 @@
-import React, { useEffect, useState } from 'react';
-import { FaUserCircle } from 'react-icons/fa';
+import React from 'react';
+import { Image } from 'react-bootstrap';
 
-const ProfileIcon = ({ xp, theme }) => {
-    const maxXp = 1000;
-    const [animatedProgress, setAnimatedProgress] = useState(0);
-    const targetProgress = Math.min((xp / maxXp) * 100, 100);
+const ProfileIcon = ({ xp = 0, theme = 'light' }) => {
+    const maxXp = 500;
+    const progress = Math.min(100, Math.round((xp / maxXp) * 100));
+    const avatarUrl = localStorage.getItem('avatar') || 'https://i.pravatar.cc/100?u=user';
 
-    useEffect(() => {
-        let start = animatedProgress;
-        const step = () => {
-            if (start < targetProgress) {
-                start += 1;
-                setAnimatedProgress(start);
-                requestAnimationFrame(step);
-            }
-        };
-        step();
-    }, [xp]);
+    const circleSize = 40;
+    const strokeWidth = 4;
+    const radius = (circleSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (progress / 100) * circumference;
 
     return (
-        <div
-            className="position-relative d-flex align-items-center justify-content-center"
-            style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: `conic-gradient(#0d6efd ${animatedProgress}%, #dee2e6 ${animatedProgress}%)`,
-                padding: '2px',
-                transition: 'background 0.3s ease',
-            }}
-        >
-            <div
-                className={`${theme === 'dark' ? 'bg-dark' : 'bg-light'} d-flex align-items-center justify-content-center`}
+        <div style={{ position: 'relative', width: circleSize, height: circleSize }}>
+            <svg width={circleSize} height={circleSize}>
+                <circle
+                    cx={circleSize / 2}
+                    cy={circleSize / 2}
+                    r={radius}
+                    stroke={theme === 'dark' ? '#444' : '#eee'}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                />
+                <circle
+                    cx={circleSize / 2}
+                    cy={circleSize / 2}
+                    r={radius}
+                    stroke="#28a745"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    fill="none"
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${circleSize / 2} ${circleSize / 2})`}
+                />
+            </svg>
+            <Image
+                src={avatarUrl}
+                roundedCircle
                 style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
+                    position: 'absolute',
+                    top: strokeWidth / 2,
+                    left: strokeWidth / 2,
+                    width: circleSize - strokeWidth,
+                    height: circleSize - strokeWidth,
+                    objectFit: 'cover'
                 }}
-            >
-                <FaUserCircle size={32} color={theme === 'dark' ? '#ced4da' : '#6c757d'} />
-            </div>
+            />
         </div>
     );
 };
