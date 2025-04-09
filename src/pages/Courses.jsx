@@ -16,7 +16,7 @@ const CoursePage = ({ theme }) => {
     };
 
     const handleStartCourse = () => {
-        // переход к урокам
+        // переход к урокам тут  пиздец
         window.location.href = `/course/${course.id}/coursePage`;
     };
 
