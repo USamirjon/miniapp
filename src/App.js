@@ -49,10 +49,9 @@ function App() {
             <Header xp={xp} xpDelta={xpDelta} theme={theme} toggleTheme={toggleTheme} />
             <Routes>
                 <Route path="/" element={<Home theme={theme} />} />
-                <Route path="/" element={<Home />} />
-                <Route path="/courses" element={<Courses />} />
-                <Route path="/course/:courseId" element={<CoursePage />} />
-                <Route path="/lessons" element={<Lessons theme={theme} />} />
+                <Route path="/courses" element={<Courses theme={theme}/>} />
+                <Route path="/course/:courseId/coursepage" element={<CoursePage theme={theme}/>} />
+                <Route path="/course/:courseId/lessons" element={<Lessons theme={theme} />} />
                 <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
                 <Route path="/test/:id" element={<Test theme={theme} />} />
                 <Route path="/profile" element={<Profile theme={theme} />} />

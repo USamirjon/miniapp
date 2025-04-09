@@ -1,89 +1,57 @@
-import React, { useEffect, useState } from 'react';
-import { Card, ProgressBar, Button, Row, Col } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Card, Button } from 'react-bootstrap';
 
-const Courses = () => {
-    const [myCourses, setMyCourses] = useState([]);
-    const [userId, setUserId] = useState(null);
+const CoursePage = ({ theme }) => {
+    const isDark = theme === 'dark';
+    const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
+    const buttonVariant = isDark ? 'light' : 'primary';
 
-    const navigate = useNavigate();
-
-    const theme = localStorage.getItem('theme') || 'light';
-    const cardBg = theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark';
-    const buttonVariant = theme === 'dark' ? 'light' : 'primary';
-
-    useEffect(() => {
-        const tg = window.Telegram?.WebApp;
-        if (!tg) return;
-
-        tg.expand();
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            setUserId(user.id);
-            fetchMyCourses(user.id);
-        }
-    }, []);
-
-    const fetchMyCourses = async (telegramId) => {
-        try {
-            const res = await fetch(`https://localhost:7137/api/users/${telegramId}/courses`);
-            const data = await res.json();
-            setMyCourses(data);
-        } catch (err) {
-            console.error('Ошибка при получении курсов пользователя:', err);
-        }
+    // Заглушка курса:
+    const course = {
+        id: 1,
+        title: 'Frontend на React',
+        description: 'Научись создавать современные интерфейсы на React: от основ до продвинутых фреймворков.',
+        whyTake: 'React — один из самых востребованных фреймворков в 2024 году. После прохождения курса ты сможешь собрать полноценное приложение и подготовиться к собеседованию.',
+        isFree: true // если false — будет кнопка "Купить"
     };
 
-    const handleGoToCourse = (courseId) => {
-        navigate(`/course/${courseId}`);
+    const handleStartCourse = () => {
+        // переход к урокам
+        window.location.href = `/course/${course.id}/coursePage`;
+    };
+
+    const handlePurchaseCourse = () => {
+        // здесь потом добавишь интеграцию с покупкой
+        alert('Оформление покупки пока недоступно');
     };
 
     return (
-        <div className="container mt-4">
-            <h2 className="mb-4">📘 Мои курсы</h2>
-            <Row>
-                {myCourses.length === 0 && (
-                    <Col>
-                        <p>У вас пока нет активных курсов.</p>
-                    </Col>
-                )}
+        <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}>
+            <h2 className="mb-4">📘 {course.title}</h2>
 
-                {myCourses.map((course) => {
-                    const progressPercent = Math.round(
-                        (course.lessonsPassed / course.totalLessons) * 100
-                    );
+            <Card className={`${cardBg} shadow-sm`}>
+                <Card.Body>
+                    <Card.Title>О курсе</Card.Title>
+                    <Card.Text>{course.description}</Card.Text>
 
-                    return (
-                        <Col key={course.id} xs={12} md={6} lg={4} className="mb-4">
-                            <Card className={`${cardBg} shadow-sm h-100`}>
-                                <Card.Body>
-                                    <Card.Title>{course.title}</Card.Title>
-                                    <Card.Subtitle className="mb-2 text-muted">{course.topic}</Card.Subtitle>
-                                    <Card.Text>
-                                        <strong>Прогресс:</strong>{' '}
-                                        {course.lessonsPassed}/{course.totalLessons}
-                                    </Card.Text>
+                    <Card.Title className="mt-4">Почему стоит пройти?</Card.Title>
+                    <Card.Text>{course.whyTake}</Card.Text>
 
-                                    <ProgressBar
-                                        now={progressPercent}
-                                        label={`${progressPercent}%`}
-                                        className="mb-3"
-                                    />
-
-                                    <Button
-                                        variant={buttonVariant}
-                                        onClick={() => handleGoToCourse(course.id)}
-                                    >
-                                        Перейти
-                                    </Button>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    );
-                })}
-            </Row>
+                    <div className="mt-4 d-grid">
+                        {course.isFree ? (
+                            <Button variant={buttonVariant} size="lg" onClick={handleStartCourse}>
+                                Начать курс бесплатно
+                            </Button>
+                        ) : (
+                            <Button variant="success" size="lg" onClick={handlePurchaseCourse}>
+                                Купить курс
+                            </Button>
+                        )}
+                    </div>
+                </Card.Body>
+            </Card>
         </div>
     );
 };
 
-export default Courses;
+export default CoursePage;
