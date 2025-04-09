@@ -11,7 +11,7 @@ const Header = ({ xp, xpDelta, theme, toggleTheme }) => {
             <div className="container-fluid justify-content-between">
                 <div>
                     <Link className="navbar-brand" to="/">🧠 Обучение</Link>
-                    <Link className="nav-link d-inline" to="/lessons">📚 Уроки</Link>
+                    <Link className="nav-link d-inline" to="/courses">📚 Курсы</Link>
                 </div>
                 <div className="d-flex align-items-center">
                     <button className="btn btn-outline-secondary me-2" onClick={toggleTheme}>

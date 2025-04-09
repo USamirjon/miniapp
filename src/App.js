@@ -7,6 +7,8 @@ import Test from './pages/Test';
 import Profile from './pages/Profile';
 import Header from './components/Header';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Courses from "./pages/Courses";
+import CoursePage from "./pages/CoursePage";
 
 function App() {
     const [xp, setXp] = useState(200);
@@ -47,6 +49,9 @@ function App() {
             <Header xp={xp} xpDelta={xpDelta} theme={theme} toggleTheme={toggleTheme} />
             <Routes>
                 <Route path="/" element={<Home theme={theme} />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/courses" element={<Courses />} />
+                <Route path="/course/:courseId" element={<CoursePage />} />
                 <Route path="/lessons" element={<Lessons theme={theme} />} />
                 <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
                 <Route path="/test/:id" element={<Test theme={theme} />} />
