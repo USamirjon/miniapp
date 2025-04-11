@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button, ProgressBar } from 'react-bootstrap';
 import { Link, useParams } from 'react-router-dom';
 
-const Lessons = ({ theme }) => {
+const LessonsPage = ({ theme }) => {
     const { courseId } = useParams();
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
@@ -79,4 +79,4 @@ const Lessons = ({ theme }) => {
     );
 };
 
-export default Lessons;
+export default LessonsPage;

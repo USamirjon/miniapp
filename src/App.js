@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Lessons from './pages/Lessons';
+import LessonsPage from './pages/LessonsPage';
 import Lesson from './pages/Lesson';
 import Test from './pages/Test';
 import Profile from './pages/Profile';
 import Header from './components/Header';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Courses from "./pages/Courses";
-import CoursePage from "./pages/CoursePage";
+import CourseDetails from "./pages/CourseDetails";
+
 
 function App() {
     const [xp, setXp] = useState(200);
@@ -50,8 +51,8 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home theme={theme} />} />
                 <Route path="/courses" element={<Courses theme={theme}/>} />
-                <Route path="/course/:courseId/coursepage" element={<CoursePage theme={theme}/>} />
-                <Route path="/course/:courseId/lessons" element={<Lessons theme={theme} />} />
+                <Route path="/course/:id/details" element={<CourseDetails theme={theme} />} />
+                <Route path="/course/:id/lessons" element={<LessonsPage theme={theme} />} />
                 <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
                 <Route path="/test/:id" element={<Test theme={theme} />} />
                 <Route path="/profile" element={<Profile theme={theme} />} />

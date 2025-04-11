@@ -4,6 +4,7 @@ import {
     Collapse, Form, ButtonGroup
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import {URL} from '../domain.ts'
 
 const Home = () => {
     const [courses, setCourses] = useState([]);
@@ -29,49 +30,34 @@ const Home = () => {
 
         if (user) {
             setUserId(user.id);
-            sendUserToBackend(user);
             fetchCourses();
             fetchPurchasedCourses(user.id);
         }
     }, []);
 
-    const sendUserToBackend = async (user) => {
-        try {
-            await fetch('https://localhost:7137/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    telegramId: user.id,
-                    firstname: user.first_name,
-                    lastname: user.last_name,
-                    username: user.username
-                }),
-            });
-        } catch (err) {
-            console.error("Failed to send user data:", err);
-        }
-    };
+
 
     const fetchCourses = async () => {
-        /*try {
-            const res = await fetch('https://localhost:7137/api/courses');
+        try {
+            const res = await fetch(URL+'api/Course/all');
             const data = await res.json();
             setCourses(data);
             setFilteredCourses(data);
             setTopics([...new Set(data.map(c => c.topic))]);
         } catch (err) {
             console.error("Failed to fetch courses:", err);
-        }*/
+        }
 
 
         // Заглушка
-        const data = [
+        /*const data = [
             { id: 1, title: 'JS', topic: 'Frontend', price: 0, description: 'Learn JS', createdAt: '2025-01-01' },
             { id: 2, title: 'UX', topic: 'Design', price: 300, description: 'UX course', createdAt: '2025-02-01' },
+            { id: 3, title: 'оX', topic: 'Design', price: 300, description: 'UX course', createdAt: '2025-02-01' },
         ];
         setCourses(data);
         setFilteredCourses(data);
-        setTopics([...new Set(data.map(c => c.topic))]);
+        setTopics([...new Set(data.map(c => c.topic))]);*/
 
     };
 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Row, Col } from 'react-bootstrap';
 import { CheckCircleFill, XCircleFill } from 'react-bootstrap-icons';
 
-const CoursePage = ({ theme }) => {
+const CourseDetails = ({ theme }) => {
     const { courseId } = useParams();
     const [lessons, setLessons] = useState([]);
     const [courseTitle, setCourseTitle] = useState('');
@@ -86,4 +86,4 @@ const CoursePage = ({ theme }) => {
     );
 };
 
-export default CoursePage;
+export default CourseDetails;
