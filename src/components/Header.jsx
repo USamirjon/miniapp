@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaMoon, FaSun } from 'react-icons/fa';
 import ProfileIcon from './ProfileIcon';
 
-const Header = ({ xp, xpDelta, theme, toggleTheme }) => {
+const Header = ({ xp, xpDelta, theme, toggleTheme, avatar="https://i.pravatar.cc/100?u=user1"}) => {
     const isDark = theme === 'dark';
 
     return (
@@ -18,7 +18,7 @@ const Header = ({ xp, xpDelta, theme, toggleTheme }) => {
                         {isDark ? <FaSun /> : <FaMoon />}
                     </button>
                     <Link to="/profile">
-                        <ProfileIcon xp={xp} theme={theme} />
+                        <ProfileIcon xp={xp} theme={theme} avatarUrl={avatar} />
                     </Link>
                 </div>
             </div>

@@ -1,11 +1,9 @@
 import React from 'react';
 import { Image } from 'react-bootstrap';
 
-const ProfileIcon = ({ xp = 0, theme = 'light' }) => {
+const ProfileIcon = ({ xp = 0, theme = 'light', avatarUrl }) => {
     const maxXp = 500;
     const progress = Math.min(100, Math.round((xp / maxXp) * 100));
-    const avatarUrl = localStorage.getItem('avatar') || 'https://i.pravatar.cc/100?u=user';
-
     const circleSize = 40;
     const strokeWidth = 4;
     const radius = (circleSize - strokeWidth) / 2;

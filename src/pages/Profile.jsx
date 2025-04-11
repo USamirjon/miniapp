@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card, ProgressBar, Image, Row, Col, Button } from 'react-bootstrap';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import {URL} from '../domain.ts'
+
 
 const defaultAvatars = [
     'https://i.pravatar.cc/100?u=user1',
@@ -10,12 +13,12 @@ const defaultAvatars = [
     'https://i.pravatar.cc/100?u=user5'
 ];
 
-const Profile = ({ theme }) => {
+const Profile = ({ theme, avatar, setAvatar }) => {
     const cardBg = theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark';
     const [user, setUser] = useState(null);
-    const [avatar, setAvatar] = useState('');
     const [showAvatars, setShowAvatars] = useState(false);
     const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const tg = window.Telegram?.WebApp;
@@ -36,7 +39,7 @@ const Profile = ({ theme }) => {
 
     const fetchUserFromBackend = async (telegramId) => {
         try {
-            const res = await axios.get('https://localhost:7137/api/Users', {
+            const res = await axios.get(URL + 'api/Users', {
                 params: { telegramId }
             });
 
@@ -68,7 +71,9 @@ const Profile = ({ theme }) => {
 
     const saveAvatar = () => {
         localStorage.setItem('avatar', avatar);
+        setAvatar(avatar); // обновляем глобальный стейт
         setShowAvatars(false);
+        navigate(`/profile`);
     };
 
     if (error) return <div className="text-center mt-5 text-danger">{error}</div>;

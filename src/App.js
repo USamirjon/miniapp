@@ -15,6 +15,7 @@ function App() {
     const [xp, setXp] = useState(200);
     const [xpDelta, setXpDelta] = useState(null);
     const [theme, setTheme] = useState('light');
+    const [avatar, setAvatar] = useState(localStorage.getItem('avatar') || 'https://i.pravatar.cc/100?u=user1');
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -26,6 +27,10 @@ function App() {
         }
     }, []);
 
+    const updateAvatar = (newAvatar) => {
+        setAvatar(newAvatar);
+        localStorage.setItem('avatar', newAvatar);
+    };
     const applyTheme = (theme) => {
         document.body.className = '';
         document.body.classList.add(`bg-${theme}`);
@@ -47,7 +52,7 @@ function App() {
 
     return (
         <div className="container p-3 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-            <Header xp={xp} xpDelta={xpDelta} theme={theme} toggleTheme={toggleTheme} />
+            <Header xp={xp} xpDelta={xpDelta} theme={theme} toggleTheme={toggleTheme} avatar={avatar}/>
             <Routes>
                 <Route path="/" element={<Home theme={theme} />} />
                 <Route path="/courses" element={<Courses theme={theme}/>} />
@@ -55,7 +60,7 @@ function App() {
                 <Route path="/course/:id/lessons" element={<LessonsPage theme={theme} />} />
                 <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
                 <Route path="/test/:id" element={<Test theme={theme} />} />
-                <Route path="/profile" element={<Profile theme={theme} />} />
+                <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
             </Routes>
         </div>
     );
