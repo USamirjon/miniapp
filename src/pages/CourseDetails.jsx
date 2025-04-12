@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Row, Col } from 'react-bootstrap';
 import { CheckCircleFill, XCircleFill } from 'react-bootstrap-icons';
+import {URL} from '../domain.ts'
+
 
 const CourseDetails = ({ theme }) => {
     const { courseId } = useParams();

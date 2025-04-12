@@ -7,7 +7,7 @@ const lessons = [
         id: 1,
         title: 'Основы Telegram Mini App',
         description: 'Изучим, как работает Telegram WebApp и как подключиться.',
-        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', // Пример видео
+        videoUrl: 'https://t.me/c/2261733387/26', // Пример видео
         progress: 100
     },
     {
@@ -48,7 +48,7 @@ const Lesson = ({ onFinish }) => {
                     <Card.Text>{lesson.description}</Card.Text>
 
                     <video width="100%" controls>
-                        <source src={lesson.videoUrl} type="video/mp4" />
+                        <source src={lesson.videoUrl} type="audio" />
                         Your browser does not support the video tag.
                     </video>
 

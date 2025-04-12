@@ -9,6 +9,7 @@ import Header from './components/Header';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Courses from "./pages/Courses";
 import CourseDetails from "./pages/CourseDetails";
+import FileUploader from "./pages/FileUploader";
 
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
                 <Route path="/test/:id" element={<Test theme={theme} />} />
                 <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
+                <Route path="/upload" element={<FileUploader />} />
             </Routes>
         </div>
     );

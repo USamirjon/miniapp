@@ -39,7 +39,7 @@ const Home = () => {
 
     const fetchCourses = async () => {
         try {
-            const res = await fetch(URL+'api/Course/all');
+            const res = await fetch(URL+'/api/Course/all');
             const data = await res.json();
             setCourses(data);
             setFilteredCourses(data);

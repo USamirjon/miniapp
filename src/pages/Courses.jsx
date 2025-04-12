@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Card, ProgressBar, Button, Row, Col } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { URL } from '../domain.ts';
 
-const Courses = () => {
+const Courses = ({ theme }) => {
     const [myCourses, setMyCourses] = useState([]);
     const [userId, setUserId] = useState(null);
 
     const navigate = useNavigate();
 
-    const theme = localStorage.getItem('theme') || 'light';
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
     const buttonVariant = isDark ? 'light' : 'primary';
@@ -22,39 +23,57 @@ const Courses = () => {
         if (user) {
             setUserId(user.id);
             fetchMyCourses(user.id);
-        } else {
-            // Заглушка
-            setMyCourses([
-                {
-                    id: 1,
-                    title: 'Основы React',
-                    topic: 'Frontend',
-                    lessonsPassed: 2,
-                    totalLessons: 5,
-                },
-                {
-                    id: 2,
-                    title: 'Базы данных',
-                    topic: 'Backend',
-                    lessonsPassed: 5,
-                    totalLessons: 10,
-                }
-            ]);
         }
     }, []);
 
     const fetchMyCourses = async (telegramId) => {
         try {
-            const res = await fetch(`https://localhost:7137/api/users/${telegramId}/courses`);
-            const data = await res.json();
-            setMyCourses(data);
+            console.log('Запрос подписок:', `${URL}/api/Users/listSubscriptionCourses?telegramId=${telegramId}`);
+
+            const { data: subscriptions } = await axios.get(`${URL}/api/Users/listSubscriptionCourses`, {
+                params: { telegramId }
+            });
+
+            console.log('📦 Subscriptions:', subscriptions);
+
+            if (!subscriptions || subscriptions.length === 0) {
+                setMyCourses([]);
+                return;
+            }
+
+            const courseRequests = subscriptions.map(async (sub) => {
+                try {
+                    const courseId = sub.courseId || sub.id || sub;
+                    console.log('Запрос курса:', `${URL}/api/Course?courseid=${courseId}`);
+
+                    const { data } = await axios.get(`${URL}/api/Course`, {
+                        params: { courseid: courseId }
+                    });
+                    return data;
+                } catch (err) {
+                    console.warn(`❌ Ошибка при получении курса ${sub.courseId || sub.id || sub}:`, err.message);
+                    if (err.response) {
+                        console.warn('Статус:', err.response.status);
+                        console.warn('Данные:', err.response.data);
+                    }
+                    return null;
+                }
+            });
+
+            const results = await Promise.all(courseRequests);
+            const filtered = results.filter(course => course !== null);
+            setMyCourses(filtered);
         } catch (err) {
             console.error('Ошибка при получении курсов пользователя:', err);
+            if (err.response) {
+                console.error('Статус:', err.response.status);
+                console.error('Данные:', err.response.data);
+            }
         }
     };
 
     const handleGoToCourse = (courseId) => {
-        navigate(`/course/${courseId}`);
+        navigate(`/course/${courseId}/lessons`);
     };
 
     return (
@@ -67,8 +86,10 @@ const Courses = () => {
                     </Col>
                 )}
                 {myCourses.map((course) => {
-                    const progressPercent = course.totalLessons > 0
-                        ? Math.round((course.lessonsPassed / course.totalLessons) * 100)
+                    const totalLessons = course.lessons?.length || 0;
+                    const lessonsPassed = 0; // если у тебя где-то хранится прогресс — сюда вставить
+                    const progressPercent = totalLessons > 0
+                        ? Math.round((lessonsPassed / totalLessons) * 100)
                         : 0;
 
                     return (
@@ -76,10 +97,11 @@ const Courses = () => {
                             <Card className={`${cardBg} shadow-sm h-100`}>
                                 <Card.Body>
                                     <Card.Title>{course.title}</Card.Title>
-                                    <Card.Subtitle className="mb-2 text-muted">{course.topic}</Card.Subtitle>
+                                    <Card.Subtitle className={`mb-2`}>
+                                        {course.briefDescription}
+                                    </Card.Subtitle>
                                     <Card.Text>
-                                        <strong>Прогресс:</strong>{' '}
-                                        {course.lessonsPassed}/{course.totalLessons}
+                                        <strong>Прогресс:</strong> {lessonsPassed}/{totalLessons}
                                     </Card.Text>
 
                                     <ProgressBar
