@@ -10,6 +10,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Courses from "./pages/Courses";
 import CourseDetails from "./pages/CourseDetails";
 import FileUploader from "./pages/FileUploader";
+import PurchaseWallet from "./pages/PurchaseWallet";
 
 
 function App() {
@@ -59,10 +60,14 @@ function App() {
                 <Route path="/courses" element={<Courses theme={theme}/>} />
                 <Route path="/course/:id/details" element={<CourseDetails theme={theme} />} />
                 <Route path="/course/:id/lessons" element={<LessonsPage theme={theme} />} />
-                <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
-                <Route path="/test/:id" element={<Test theme={theme} />} />
+                <Route path="/course/:courseId/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
+                <Route
+                    path="/test/:id"
+                    element={<Test key={theme} theme={theme} onFinish={gainXp} />}
+                />
                 <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
                 <Route path="/upload" element={<FileUploader />} />
+                <Route path="/purchase-wallet" element={<PurchaseWallet />} />
             </Routes>
         </div>
     );

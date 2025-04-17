@@ -30,7 +30,7 @@ const Courses = ({ theme }) => {
         try {
             console.log('Запрос подписок:', `${URL}/api/Users/listSubscriptionCourses?telegramId=${telegramId}`);
 
-            const { data: subscriptions } = await axios.get(`${URL}/api/Users/listSubscriptionCourses`, {
+            const { data: subscriptions } = await axios.get(`${URL}/api/Users/list-subscription-courses`, {
                 params: { telegramId }
             });
 

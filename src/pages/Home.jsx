@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     Button, Card, Row, Col,
-    Collapse, Form, ButtonGroup
+    Collapse, Form, ButtonGroup, Badge
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -123,6 +123,15 @@ const Home = () => {
         return course.price > 0 ? 'primary' : 'info';
     };
 
+    const calculateDiscountPercentage = (price, discountPrice) => {
+        if (price > 0 && discountPrice && discountPrice < price) {
+            const discount = ((price - discountPrice) / price) * 100;
+            return Math.round(discount);
+        }
+        return 0;
+    };
+
+
     return (
         <div className="container mt-4">
             <h2 className="mb-2">📚 Доступные курсы</h2>
@@ -179,24 +188,54 @@ const Home = () => {
             </Collapse>
 
             <Row>
-                {filteredCourses.map(course => (
-                    <Col key={course.id} md={6} lg={4} className="mb-4">
-                        <Card className={`${cardBg} shadow`}>
-                            <Card.Body>
-                                <Card.Title>{course.title}</Card.Title>
-                                <Card.Text>{course.description}</Card.Text>
-                                <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
-                                <Card.Text><strong>Цена:</strong> {course.price}₽</Card.Text>
-                                <Button
-                                    variant={getButtonVariant(course)}
-                                    onClick={() => handleCourseClick(course.id)}
-                                >
-                                    {getButtonText(course)}
-                                </Button>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                ))}
+                {filteredCourses.map(course => {
+                    const discountPercentage = course.price && course.discountPrice
+                        ? calculateDiscountPercentage(course.price, course.discountPrice)
+                        : 0;
+
+                    return (
+                        <Col key={course.id} md={6} lg={4} className="mb-4 position-relative">
+                            <Card className={`${cardBg} shadow`}>
+                                {course.discount && course.priceWithDiscount && (
+                                    <Badge
+                                        bg="danger"
+                                        className="position-absolute top-0 end-0 m-2 rounded-pill"
+                                        style={{ zIndex: 1 }}
+                                    >
+                                        -{calculateDiscountPercentage(course.price, course.priceWithDiscount)}%
+                                    </Badge>
+                                )}
+
+                                <Card.Body>
+                                    <Card.Title>{course.title}</Card.Title>
+                                    <Card.Text>{course.description}</Card.Text>
+                                    <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
+
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {course.discount && course.priceWithDiscount ? (
+                                                <>
+                                                    <del>{course.price}₽</del>{' '}
+                                                    <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
+                                                </>
+                                            ) : (
+                                                <span>{course.price === 0 ? 'Бесплатно' : `${course.price}₽`}</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        variant={getButtonVariant(course)}
+                                        onClick={() => handleCourseClick(course.id)}
+                                    >
+                                        {getButtonText(course)}
+                                    </Button>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+
+                    );
+                })}
             </Row>
         </div>
     );

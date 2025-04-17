@@ -6,7 +6,7 @@ import { URL } from '../domain.ts';
 import { CheckCircleFill, XCircleFill } from 'react-bootstrap-icons';
 
 const LessonsPage = ({ theme }) => {
-    const { courseId } = useParams();
+    const { id: courseId } = useParams();
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
     const buttonVariant = isDark ? 'light' : 'primary';
@@ -93,7 +93,7 @@ const LessonsPage = ({ theme }) => {
 
                                 <Card.Text>{lesson.description}</Card.Text>
 
-                                <Link to={`/lesson/${lesson.id}`}>
+                                <Link to={`/course/${courseId}/lesson/${lesson.id}`}>
                                     <Button variant={buttonVariant}>
                                         {lesson.isCompleted ? 'Повторить' : 'Начать'}
                                     </Button>

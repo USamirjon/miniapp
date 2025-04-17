@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, ProgressBar, Image, Row, Col, Button } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import {URL} from '../domain.ts'
-
+import { URL } from '../domain.ts';
 
 const defaultAvatars = [
     'https://i.pravatar.cc/100?u=user1',
@@ -16,6 +15,7 @@ const defaultAvatars = [
 const Profile = ({ theme, avatar, setAvatar }) => {
     const cardBg = theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark';
     const [user, setUser] = useState(null);
+    const [wallet, setWallet] = useState(null);
     const [showAvatars, setShowAvatars] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -32,6 +32,7 @@ const Profile = ({ theme, avatar, setAvatar }) => {
         const tgUser = tg.initDataUnsafe?.user;
         if (tgUser?.id) {
             fetchUserFromBackend(tgUser.id);
+            fetchWallet(tgUser.id);
         } else {
             setError('Пользователь Telegram не найден');
         }
@@ -67,11 +68,23 @@ const Profile = ({ theme, avatar, setAvatar }) => {
         }
     };
 
+    const fetchWallet = async (telegramId) => {
+        try {
+            const res = await axios.get(URL + '/api/Transaction', {
+                params: { telegramId }
+            });
+            setWallet(res.data);
+        } catch (err) {
+            console.error('Ошибка при получении баланса:', err);
+            setWallet(null);
+        }
+    };
+
     const selectDefaultAvatar = (url) => setAvatar(url);
 
     const saveAvatar = () => {
         localStorage.setItem('avatar', avatar);
-        setAvatar(avatar); // обновляем глобальный стейт
+        setAvatar(avatar);
         setShowAvatars(false);
         navigate(`/profile`);
     };
@@ -142,24 +155,36 @@ const Profile = ({ theme, avatar, setAvatar }) => {
                         <p><strong>Курс:</strong> {user.course}</p>
                         <p><strong>Username:</strong> @{user.username}</p>
                         <p><strong>Telegram ID:</strong> {user.telegramId}</p>
+                        <div className="mb-2">
+                            <strong>Баланс: {wallet} монет</strong>
+                        </div>
+                        <Button
+                            variant="warning"
+                            className="mt-3"
+                            onClick={() => navigate('/purchase-wallet')}
+                        >
+                            Пополнить баланс
+                        </Button>
 
-                        <div className="mb-3">
+
+                        <div className="mb-3 mt-3">
                             <strong>Уровень: {user.level}</strong>
                         </div>
 
                         <div className="mb-2">
                             <strong>Опыт: {user.xp}/{user.maxXp}</strong>
-                            <ProgressBar now={xpPercent} label={`${xpPercent}%`} className="mt-1" />
+                            <ProgressBar now={xpPercent} label={`${xpPercent}%`} className="mt-1"/>
                         </div>
 
                         <div className="mb-2">
                             <strong>Уроки: {user.lessonsPassed}/{user.totalLessons}</strong>
-                            <ProgressBar variant="info" now={lessonsPercent} label={`${lessonsPercent}%`} className="mt-1" />
+                            <ProgressBar variant="info" now={lessonsPercent} label={`${lessonsPercent}%`}
+                                         className="mt-1"/>
                         </div>
 
                         <div className="mb-2">
                             <strong>Правильных ответов: {correctPercent}%</strong>
-                            <ProgressBar variant="success" now={correctPercent} className="mt-1" />
+                            <ProgressBar variant="success" now={correctPercent} className="mt-1"/>
                         </div>
                     </Col>
                 </Row>

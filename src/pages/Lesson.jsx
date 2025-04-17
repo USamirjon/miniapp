@@ -1,69 +1,91 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Card, ProgressBar } from 'react-bootstrap';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import { URL } from '../domain.ts';
 
-const lessons = [
-    {
-        id: 1,
-        title: 'Основы Telegram Mini App',
-        description: 'Изучим, как работает Telegram WebApp и как подключиться.',
-        videoUrl: 'https://t.me/c/2261733387/26', // Пример видео
-        progress: 100
-    },
-    {
-        id: 2,
-        title: 'Видео-уроки и теория',
-        description: 'Добавим видео и текстовые материалы в приложение.',
-        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-        progress: 60
-    },
-    {
-        id: 3,
-        title: 'Создание тестов',
-        description: 'Пользователь сможет пройти интерактивный тест.',
-        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-        progress: 0
-    }
-];
+const Lesson = ({ onFinish, theme }) => {
+    const { id, courseId } = useParams();
+    const [lesson, setLesson] = useState(null);
+    const [completed, setCompleted] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-const Lesson = ({ onFinish }) => {
-    const { id } = useParams();
-    const lesson = lessons.find(l => l.id === parseInt(id));
+    const isDark = theme === 'dark';
+    const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
 
-    const [completed, setCompleted] = useState(lesson.progress === 100);
+    useEffect(() => {
+        const fetchLesson = async () => {
+            try {
+                setLoading(true);
+                const { data } = await axios.get(`${URL}/api/Course/lessonByCourse`, {
+                    params: { courseId }
+                });
+
+                const foundLesson = data.find(l => l.testId === id);
+                if (foundLesson) {
+                    setLesson(foundLesson);
+                } else {
+                    setError('Урок не найден');
+                }
+            } catch (err) {
+                console.error('Ошибка при загрузке урока:', err);
+                setError('Ошибка при загрузке урока.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLesson();
+    }, [id, courseId]);
 
     const handleComplete = () => {
         setCompleted(true);
-        onFinish(50); // Здесь мы вызываем onFinish, передавая количество XP за завершение урока
+        if (lesson.experience) {
+            onFinish(lesson.experience);
+        }
     };
 
-    const theme = localStorage.getItem('theme') || 'light';
-    const cardBg = theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark';
+    if (loading) {
+        return <div className="container mt-4 text-center"><h5>Загрузка...</h5></div>;
+    }
+
+    if (error || !lesson) {
+        return <div className="container mt-4 text-danger"><h5>{error || 'Урок не найден'}</h5></div>;
+    }
 
     return (
-        <div className="container">
+        <div className="container mt-4">
             <Card className={`${cardBg} shadow-sm`}>
                 <Card.Body>
                     <Card.Title>{lesson.title}</Card.Title>
                     <Card.Text>{lesson.description}</Card.Text>
 
-                    <video width="100%" controls>
-                        <source src={lesson.videoUrl} type="audio" />
-                        Your browser does not support the video tag.
-                    </video>
+                    {lesson.urlVideo && (
+                        <video width="100%" controls className="mb-3">
+                            <source src={lesson.urlVideo} type="video/mp4" />
+                            Ваш браузер не поддерживает видео.
+                        </video>
+                    )}
 
-                    <ProgressBar now={lesson.progress} label={`${lesson.progress}%`} className="my-3" />
+                    <ProgressBar now={completed ? 100 : 0} label={`${completed ? 100 : 0}%`} className="mb-3" />
 
-                    {!completed && (
-                        <Button className="btn btn-success mt-3" onClick={handleComplete}>
+                    {!completed ? (
+                        <Button className="btn btn-success mb-2" onClick={handleComplete}>
                             ✅ Завершить урок
+                        </Button>
+                    ) : (
+                        <Button variant="success" disabled className="mb-2">
+                            Урок завершён
                         </Button>
                     )}
 
-                    {completed && (
-                        <Button variant="success" disabled>
-                            Урок завершён
-                        </Button>
+                    {lesson.testId && (
+                        <Link to={`/test/${lesson.testId}`}>
+                            <Button variant={isDark ? 'outline-light' : 'outline-primary'}>
+                                📋 Перейти к тесту
+                            </Button>
+                        </Link>
                     )}
                 </Card.Body>
             </Card>
