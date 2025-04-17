@@ -4,7 +4,9 @@ import {
     Collapse, Form, ButtonGroup
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import {URL} from '../domain.ts'
+import axios from 'axios';
+import { URL } from '../domain.ts';
+import limit from 'p-limit';
 
 const Home = () => {
     const [courses, setCourses] = useState([]);
@@ -30,47 +32,42 @@ const Home = () => {
 
         if (user) {
             setUserId(user.id);
-            fetchCourses();
-            fetchPurchasedCourses(user.id);
+            fetchCourses(user.id);
         }
     }, []);
 
-
-
-    const fetchCourses = async () => {
+    const fetchCourses = async (telegramId) => {
         try {
-            const res = await fetch(URL+'/api/Course/all');
-            const data = await res.json();
+            const res = await axios.get(URL + '/api/Course/all');
+            const data = res.data;
             setCourses(data);
             setFilteredCourses(data);
             setTopics([...new Set(data.map(c => c.topic))]);
+
+            const limiter = limit(5);
+
+            const checkSubscriptions = data.map(course =>
+                limiter(async () => {
+                    try {
+                        const response = await axios.get(URL + '/api/Course/isSubscribe', {
+                            params: {
+                                telegramId,
+                                courseId: course.id
+                            }
+                        });
+                        return response.data ? course.id : null;
+                    } catch (error) {
+                        console.error(`Ошибка при проверке подписки на курс ${course.id}`, error);
+                        return null;
+                    }
+                })
+            );
+
+            const subscriptions = await Promise.all(checkSubscriptions);
+            setPurchasedCourses(subscriptions.filter(Boolean));
         } catch (err) {
-            console.error("Failed to fetch courses:", err);
+            console.error("Не удалось получить курсы:", err);
         }
-
-
-        // Заглушка
-        /*const data = [
-            { id: 1, title: 'JS', topic: 'Frontend', price: 0, description: 'Learn JS', createdAt: '2025-01-01' },
-            { id: 2, title: 'UX', topic: 'Design', price: 300, description: 'UX course', createdAt: '2025-02-01' },
-            { id: 3, title: 'оX', topic: 'Design', price: 300, description: 'UX course', createdAt: '2025-02-01' },
-        ];
-        setCourses(data);
-        setFilteredCourses(data);
-        setTopics([...new Set(data.map(c => c.topic))]);*/
-
-    };
-
-    const fetchPurchasedCourses = async (telegramId) => {
-        /*try {
-            const res = await fetch(`https://localhost:7137/api/users/${telegramId}/courses`);
-            const data = await res.json();
-            setPurchasedCourses(data.map(c => c.id));
-        } catch (err) {
-            console.error("Failed to fetch user courses:", err);
-        }*/
-
-         setPurchasedCourses([1]); // Заглушка
     };
 
     const toggleTopic = (topic) => {
@@ -106,10 +103,24 @@ const Home = () => {
 
     const handleCourseClick = (id) => {
         if (purchasedCourses.includes(id)) {
-            navigate(`/course/${id}`);
+            navigate(`/course/${id}/lessons`);
         } else {
             navigate(`/course/${id}/details`);
         }
+    };
+
+    const getButtonText = (course) => {
+        if (purchasedCourses.includes(course.id)) {
+            return 'Перейти к курсу';
+        }
+        return course.price > 0 ? 'Купить' : 'Подписаться';
+    };
+
+    const getButtonVariant = (course) => {
+        if (purchasedCourses.includes(course.id)) {
+            return 'success';
+        }
+        return course.price > 0 ? 'primary' : 'info';
     };
 
     return (
@@ -177,10 +188,10 @@ const Home = () => {
                                 <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
                                 <Card.Text><strong>Цена:</strong> {course.price}₽</Card.Text>
                                 <Button
-                                    variant={purchasedCourses.includes(course.id) ? 'success' : 'primary'}
+                                    variant={getButtonVariant(course)}
                                     onClick={() => handleCourseClick(course.id)}
                                 >
-                                    {purchasedCourses.includes(course.id) ? 'Перейти к курсу' : 'Подробнее'}
+                                    {getButtonText(course)}
                                 </Button>
                             </Card.Body>
                         </Card>

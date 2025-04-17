@@ -39,7 +39,7 @@ const Profile = ({ theme, avatar, setAvatar }) => {
 
     const fetchUserFromBackend = async (telegramId) => {
         try {
-            const res = await axios.get(URL + 'api/Users', {
+            const res = await axios.get(URL + '/api/Users', {
                 params: { telegramId }
             });
 
