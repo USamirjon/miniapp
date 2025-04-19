@@ -11,7 +11,7 @@ const Lesson = ({ onFinish, theme }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [userId, setUserId] = useState(null);
-    const [testSuccess, setTestSuccess] = useState(false);
+    const [testPassed, setTestPassed] = useState(false);
 
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
@@ -50,23 +50,24 @@ const Lesson = ({ onFinish, theme }) => {
     }, [id, courseId]);
 
     useEffect(() => {
-        const checkTestSuccess = async () => {
+        const checkTestResults = async () => {
             if (!userId || !lesson?.testId) return;
 
             try {
-                const { data } = await axios.get(`${URL}/api/Course/testSucsess`, {
+                const { data } = await axios.get(`${URL}/api/Course/testResult`, {
                     params: { telegramId: userId }
                 });
 
-                if (data?.testId === lesson.testId && data.result === true) {
-                    setTestSuccess(true);
-                }
+                const passed = data.some(
+                    (entry) => entry.testId === lesson.testId && entry.result === true
+                );
+                setTestPassed(passed);
             } catch (err) {
-                console.error('Ошибка при проверке прохождения теста:', err);
+                console.error('Ошибка при проверке результатов теста:', err);
             }
         };
 
-        checkTestSuccess();
+        checkTestResults();
     }, [userId, lesson]);
 
     const handleComplete = async () => {
@@ -94,7 +95,7 @@ const Lesson = ({ onFinish, theme }) => {
         return <div className="container mt-4 text-danger"><h5>{error || 'Урок не найден'}</h5></div>;
     }
 
-    const showTestButton = lesson.testId && !testSuccess;
+    const showTestButton = lesson.testId && !testPassed;
 
     return (
         <div className="container mt-4">
