@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, ProgressBar } from 'react-bootstrap';
+import { Button, Card, Row, Col } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
@@ -10,9 +10,19 @@ const Lesson = ({ onFinish, theme }) => {
     const [completed, setCompleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [testSuccess, setTestSuccess] = useState(false);
 
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
+
+    useEffect(() => {
+        const tg = window.Telegram?.WebApp;
+        const telegramUser = tg?.initDataUnsafe?.user;
+        if (telegramUser?.id) {
+            setUserId(telegramUser.id);
+        }
+    }, []);
 
     useEffect(() => {
         const fetchLesson = async () => {
@@ -39,10 +49,40 @@ const Lesson = ({ onFinish, theme }) => {
         fetchLesson();
     }, [id, courseId]);
 
-    const handleComplete = () => {
-        setCompleted(true);
-        if (lesson.experience) {
-            onFinish(lesson.experience);
+    useEffect(() => {
+        const checkTestSuccess = async () => {
+            if (!userId || !lesson?.testId) return;
+
+            try {
+                const { data } = await axios.get(`${URL}/api/Course/testSucsess`, {
+                    params: { telegramId: userId }
+                });
+
+                if (data?.testId === lesson.testId && data.result === true) {
+                    setTestSuccess(true);
+                }
+            } catch (err) {
+                console.error('Ошибка при проверке прохождения теста:', err);
+            }
+        };
+
+        checkTestSuccess();
+    }, [userId, lesson]);
+
+    const handleComplete = async () => {
+        if (!userId || !lesson) return;
+
+        try {
+            await axios.post(`${URL}/api/Course/testLesson`, {
+                telegramId: userId,
+                lessonId: lesson.testId
+            });
+            setCompleted(true);
+            if (lesson.experience && onFinish) {
+                onFinish(lesson.experience);
+            }
+        } catch (err) {
+            console.error('Ошибка при завершении урока:', err);
         }
     };
 
@@ -54,6 +94,8 @@ const Lesson = ({ onFinish, theme }) => {
         return <div className="container mt-4 text-danger"><h5>{error || 'Урок не найден'}</h5></div>;
     }
 
+    const showTestButton = lesson.testId && !testSuccess;
+
     return (
         <div className="container mt-4">
             <Card className={`${cardBg} shadow-sm`}>
@@ -61,32 +103,30 @@ const Lesson = ({ onFinish, theme }) => {
                     <Card.Title>{lesson.title}</Card.Title>
                     <Card.Text>{lesson.description}</Card.Text>
 
-                    {lesson.urlVideo && (
-                        <video width="100%" controls className="mb-3">
-                            <source src={lesson.urlVideo} type="video/mp4" />
-                            Ваш браузер не поддерживает видео.
-                        </video>
-                    )}
-
-                    <ProgressBar now={completed ? 100 : 0} label={`${completed ? 100 : 0}%`} className="mb-3" />
-
-                    {!completed ? (
-                        <Button className="btn btn-success mb-2" onClick={handleComplete}>
-                            ✅ Завершить урок
-                        </Button>
-                    ) : (
-                        <Button variant="success" disabled className="mb-2">
-                            Урок завершён
-                        </Button>
-                    )}
-
-                    {lesson.testId && (
-                        <Link to={`/test/${lesson.testId}`}>
-                            <Button variant={isDark ? 'outline-light' : 'outline-primary'}>
-                                📋 Перейти к тесту
-                            </Button>
-                        </Link>
-                    )}
+                    <Row className="mt-3 g-2">
+                        {showTestButton ? (
+                            <Col xs={12} md="auto">
+                                <Link to={`/test/${lesson.testId}`}>
+                                    <Button
+                                        variant={isDark ? 'outline-light' : 'outline-primary'}
+                                        className="w-100"
+                                    >
+                                        📋 Перейти к тесту
+                                    </Button>
+                                </Link>
+                            </Col>
+                        ) : (
+                            <Col xs={12} md="auto">
+                                <Button
+                                    className="btn btn-success w-100"
+                                    onClick={handleComplete}
+                                    disabled={completed}
+                                >
+                                    {completed ? 'Урок завершён' : '✅ Завершить урок'}
+                                </Button>
+                            </Col>
+                        )}
+                    </Row>
                 </Card.Body>
             </Card>
         </div>

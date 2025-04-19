@@ -38,14 +38,42 @@ const LessonsPage = ({ theme }) => {
 
                 setCourseTitle(courseRes.data?.title || '');
 
-                // Здесь ты можешь заменить временную логику на реальный API:
-                const lessonsWithStatus = lessonsRes.data.map((lesson, idx) => ({
-                    ...lesson,
-                    id: lesson.testId,
-                    isCompleted: idx === 0 // только первый считается пройденным — демонстрация
-                }));
+                const rawLessons = lessonsRes.data;
 
-                setLessons(lessonsWithStatus);
+                // Only fetch completion status if userId is available
+                if (userId) {
+                    const statusChecks = await Promise.all(
+                        rawLessons.map((lesson) =>
+                            axios
+                                .get(`${URL}/api/Course/lessonSucsess`, {
+                                    params: {
+                                        telegramId: userId,
+                                        lessonId: lesson.testId
+                                    }
+                                })
+                                .then((res) => res.data)
+                                .catch(() => {
+                                    console.error(`Failed to get completion status for lesson ${lesson.testId}`);
+                                    return false;
+                                })
+                        )
+                    );
+
+                    const lessonsWithStatus = rawLessons.map((lesson, idx) => ({
+                        ...lesson,
+                        id: lesson.testId,
+                        isCompleted: statusChecks[idx]
+                    }));
+
+                    setLessons(lessonsWithStatus);
+                } else {
+                    // If no userId, mark all lessons as not completed
+                    setLessons(rawLessons.map(lesson => ({
+                        ...lesson,
+                        id: lesson.testId,
+                        isCompleted: false
+                    })));
+                }
             } catch (err) {
                 console.error('Ошибка при загрузке курса и уроков:', err);
                 setError('Не удалось загрузить данные курса. Попробуйте позже.');
@@ -54,8 +82,12 @@ const LessonsPage = ({ theme }) => {
             }
         };
 
-        if (courseId) fetchLessons();
-    }, [courseId]);
+        // Fetch lessons even if userId is not available yet
+        if (courseId) {
+            fetchLessons();
+        }
+    }, [courseId, userId]); // Will re-run when userId becomes available
+
 
     if (loading) {
         return <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}><h4>Загрузка...</h4></div>;

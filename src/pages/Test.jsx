@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Alert, ProgressBar } from 'react-bootstrap';
 import axios from 'axios';
 import { URL } from '../domain.ts';
 
 const Test = ({ theme }) => {
     const { id: testId } = useParams();
+    const navigate = useNavigate();
 
     const [questions, setQuestions] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,6 +14,7 @@ const Test = ({ theme }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [correctCount, setCorrectCount] = useState(0);
     const [finished, setFinished] = useState(false);
+    const [resultSent, setResultSent] = useState(false);
 
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
@@ -21,7 +23,7 @@ const Test = ({ theme }) => {
         const fetchQuestions = async () => {
             try {
                 const { data } = await axios.get(`${URL}/api/Course/questions`, {
-                    params: { testId }
+                    params: { testId },
                 });
                 setQuestions(data);
             } catch (error) {
@@ -31,6 +33,30 @@ const Test = ({ theme }) => {
 
         fetchQuestions();
     }, [testId]);
+
+    const sendResult = useCallback(async (result) => {
+        try {
+            const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+            if (!telegramId || resultSent) return;
+
+            await axios.post(`${URL}/api/Course/testResult`, {
+                telegramId,
+                testId,
+                result,
+            });
+
+            setResultSent(true);
+        } catch (error) {
+            console.error('Ошибка при отправке результата теста:', error);
+        }
+    }, [resultSent, testId]);
+
+    useEffect(() => {
+        if (!finished) return;
+
+        const passed = correctCount > questions.length / 2;
+        sendResult(passed);
+    }, [finished, correctCount, questions.length, sendResult]);
 
     const currentQuestion = questions[currentIndex];
 
@@ -54,13 +80,39 @@ const Test = ({ theme }) => {
         }
     };
 
+    const handleRestart = () => {
+        setCurrentIndex(0);
+        setCorrectCount(0);
+        setSelectedAnswer(null);
+        setShowExplanation(false);
+        setFinished(false);
+        setResultSent(false);
+    };
+
     if (!questions.length) return <p className="text-center mt-4">Загрузка вопросов...</p>;
 
     if (finished) {
+        const passed = correctCount > questions.length / 2;
+
         return (
             <div className="container mt-4 text-center">
-                <h2>🎉 Тест завершён!</h2>
-                <p>Правильных ответов: {correctCount} из {questions.length}</p>
+                <h2>{passed ? '🎉 Поздравляем!' : '🫶 Не расстраивайся!'}</h2>
+                <p>Ты ответил правильно на {correctCount} из {questions.length} вопросов.</p>
+
+                {passed ? (
+                    <Button variant="success" className="m-2" onClick={() => navigate(-1)}>
+                        Вернуться к курсу
+                    </Button>
+                ) : (
+                    <>
+                        <Button variant="warning" className="m-2" onClick={handleRestart}>
+                            Повторить тест
+                        </Button>
+                        <Button variant="secondary" className="m-2" onClick={() => navigate(-1)}>
+                            Вернуться к курсу
+                        </Button>
+                    </>
+                )}
             </div>
         );
     }
@@ -72,7 +124,7 @@ const Test = ({ theme }) => {
                     <Card.Title>{currentQuestion.title}</Card.Title>
 
                     <ProgressBar
-                        now={((currentIndex) / questions.length) * 100}
+                        now={(currentIndex / questions.length) * 100}
                         className="mb-3"
                     />
 
@@ -113,7 +165,9 @@ const Test = ({ theme }) => {
                                 onClick={handleNext}
                                 className="mt-3"
                             >
-                                {currentIndex + 1 === questions.length ? 'Завершить' : 'Следующий вопрос'}
+                                {currentIndex + 1 === questions.length
+                                    ? 'Завершить'
+                                    : 'Следующий вопрос'}
                             </Button>
                         </>
                     )}
