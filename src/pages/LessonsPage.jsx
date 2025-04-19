@@ -26,80 +26,66 @@ const LessonsPage = ({ theme }) => {
     }, []);
 
     useEffect(() => {
-        const fetchLessons = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                setError(null);
+                const courseRes = await axios.get(`${URL}/api/Course`, {
+                    params: { courseid: courseId }
+                });
 
-                const [courseRes, lessonsRes] = await Promise.all([
-                    axios.get(`${URL}/api/Course`, { params: { courseid: courseId } }),
-                    axios.get(`${URL}/api/Course/lessonByCourse`, { params: { courseId } })
-                ]);
+                const courseData = courseRes.data;
+                setCourseTitle(courseData?.title || '');
+                const rawLessons = courseData.lessons || [];
 
-                setCourseTitle(courseRes.data?.title || '');
-
-                const rawLessons = lessonsRes.data;
-
-                // Only fetch completion status if userId is available
-                if (userId) {
-                    const statusChecks = await Promise.all(
-                        rawLessons.map((lesson) =>
-                            axios
-                                .get(`${URL}/api/Course/lessonSucsess`, {
-                                    params: {
-                                        telegramId: userId,
-                                        lessonId: lesson.testId
-                                    }
-                                })
-                                .then((res) => res.data)
-                                .catch(() => {
-                                    console.error(`Failed to get completion status for lesson ${lesson.testId}`);
-                                    return false;
-                                })
-                        )
-                    );
-
-                    const lessonsWithStatus = rawLessons.map((lesson, idx) => ({
-                        ...lesson,
-                        id: lesson.testId,
-                        isCompleted: statusChecks[idx]
-                    }));
-
-                    setLessons(lessonsWithStatus);
-                } else {
-                    // If no userId, mark all lessons as not completed
+                if (!userId) {
                     setLessons(rawLessons.map(lesson => ({
                         ...lesson,
-                        id: lesson.testId,
                         isCompleted: false
                     })));
+                    return;
                 }
+
+                const completedStatuses = await Promise.all(
+                    rawLessons.map(lesson =>
+                        axios.get(`${URL}/api/Course/lessonSucsess`, {
+                            params: {
+                                telegramId: userId,
+                                lessonId: lesson.id
+                            }
+                        })
+                            .then(res => res.data)
+                            .catch(() => false)
+                    )
+                );
+
+                const enrichedLessons = rawLessons.map((lesson, idx) => ({
+                    ...lesson,
+                    isCompleted: completedStatuses[idx]
+                }));
+
+                setLessons(enrichedLessons);
             } catch (err) {
-                console.error('Ошибка при загрузке курса и уроков:', err);
-                setError('Не удалось загрузить данные курса. Попробуйте позже.');
+                console.error('Ошибка при загрузке курса или уроков:', err);
+                setError('Не удалось загрузить данные курса.');
             } finally {
                 setLoading(false);
             }
         };
 
-        // Fetch lessons even if userId is not available yet
         if (courseId) {
-            fetchLessons();
+            fetchData();
         }
-    }, [courseId, userId]); // Will re-run when userId becomes available
+    }, [courseId, userId]);
 
-
-    if (loading) {
-        return <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}><h4>Загрузка...</h4></div>;
-    }
+    if (loading) return <div className="container mt-4 text-center"><h5>Загрузка...</h5></div>;
 
     if (error) {
         return (
-            <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}>
+            <div className="container mt-4">
                 <h4>Ошибка</h4>
                 <p>{error}</p>
                 <Link to="/courses">
-                    <Button variant={buttonVariant}>Назад к курсам</Button>
+                    <Button variant={buttonVariant}>Назад</Button>
                 </Link>
             </div>
         );
@@ -108,7 +94,6 @@ const LessonsPage = ({ theme }) => {
     return (
         <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}>
             <h2 className="mb-4">📘 Уроки курса: {courseTitle}</h2>
-
             <div className="row">
                 {lessons.map((lesson) => (
                     <div className="col-md-6 mb-4" key={lesson.id}>
@@ -122,9 +107,7 @@ const LessonsPage = ({ theme }) => {
                                         <XCircleFill color="red" size={22} />
                                     )}
                                 </Card.Title>
-
                                 <Card.Text>{lesson.description}</Card.Text>
-
                                 <Link to={`/course/${courseId}/lesson/${lesson.id}`}>
                                     <Button variant={buttonVariant}>
                                         {lesson.isCompleted ? 'Повторить' : 'Начать'}

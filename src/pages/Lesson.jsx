@@ -5,13 +5,13 @@ import axios from 'axios';
 import { URL } from '../domain.ts';
 
 const Lesson = ({ onFinish, theme }) => {
-    const { id, courseId } = useParams();
+    const { id: lessonId, courseId } = useParams();
     const [lesson, setLesson] = useState(null);
-    const [completed, setCompleted] = useState(false);
+    const [lessonCompleted, setLessonCompleted] = useState(false);
+    const [testCompleted, setTestCompleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [userId, setUserId] = useState(null);
-    const [testPassed, setTestPassed] = useState(false);
 
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
@@ -28,11 +28,11 @@ const Lesson = ({ onFinish, theme }) => {
         const fetchLesson = async () => {
             try {
                 setLoading(true);
-                const { data } = await axios.get(`${URL}/api/Course/lessonByCourse`, {
-                    params: { courseId }
+                const { data } = await axios.get(`${URL}/api/Course`, {
+                    params: { courseid: courseId }
                 });
 
-                const foundLesson = data.find(l => l.testId === id);
+                const foundLesson = data.lessons.find(l => l.id === lessonId);
                 if (foundLesson) {
                     setLesson(foundLesson);
                 } else {
@@ -46,40 +46,45 @@ const Lesson = ({ onFinish, theme }) => {
             }
         };
 
-        fetchLesson();
-    }, [id, courseId]);
+        if (courseId && lessonId) fetchLesson();
+    }, [courseId, lessonId]);
 
     useEffect(() => {
-        const checkTestResults = async () => {
-            if (!userId || !lesson?.testId) return;
+        const checkProgress = async () => {
+            if (!userId || !lessonId || !lesson) return;
 
             try {
-                const { data } = await axios.get(`${URL}/api/Course/testResult`, {
-                    params: { telegramId: userId }
-                });
+                const [lessonRes, testRes] = await Promise.all([
+                    axios.get(`${URL}/api/Course/lessonSucsess`, {
+                        params: { telegramId: userId, lessonId }
+                    }),
+                    lesson.testId
+                        ? axios.get(`${URL}/api/Course/testSucsess`, {
+                            params: { telegramId: userId, testId: lesson.testId }
+                        })
+                        : Promise.resolve({ data: false })
+                ]);
 
-                const passed = data.some(
-                    (entry) => entry.testId === lesson.testId && entry.result === true
-                );
-                setTestPassed(passed);
+                setLessonCompleted(lessonRes.data === true);
+                setTestCompleted(testRes.data === true);
             } catch (err) {
-                console.error('Ошибка при проверке результатов теста:', err);
+                console.error('Ошибка при проверке прогресса:', err);
             }
         };
 
-        checkTestResults();
+        if (lesson) checkProgress();
     }, [userId, lesson]);
 
     const handleComplete = async () => {
-        if (!userId || !lesson) return;
+        if (!userId || !lessonId) return;
 
         try {
             await axios.post(`${URL}/api/Course/testLesson`, {
                 telegramId: userId,
-                lessonId: lesson.testId
+                lessonId
             });
-            setCompleted(true);
-            if (lesson.experience && onFinish) {
+            setLessonCompleted(true);
+            if (lesson?.experience && onFinish) {
                 onFinish(lesson.experience);
             }
         } catch (err) {
@@ -95,8 +100,6 @@ const Lesson = ({ onFinish, theme }) => {
         return <div className="container mt-4 text-danger"><h5>{error || 'Урок не найден'}</h5></div>;
     }
 
-    const showTestButton = lesson.testId && !testPassed;
-
     return (
         <div className="container mt-4">
             <Card className={`${cardBg} shadow-sm`}>
@@ -105,25 +108,46 @@ const Lesson = ({ onFinish, theme }) => {
                     <Card.Text>{lesson.description}</Card.Text>
 
                     <Row className="mt-3 g-2">
-                        {showTestButton ? (
+                        {lessonCompleted ? (
                             <Col xs={12} md="auto">
-                                <Link to={`/test/${lesson.testId}`}>
+                                <Link to={`/course/${courseId}/lessons`}>
                                     <Button
-                                        variant={isDark ? 'outline-light' : 'outline-primary'}
+                                        variant="success"
                                         className="w-100"
                                     >
-                                        📋 Перейти к тесту
+                                        ✅ Урок завершён — Вернуться к курсу
                                     </Button>
                                 </Link>
                             </Col>
+                        ) : lesson.testId ? (
+                            testCompleted ? (
+                                <Col xs={12} md="auto">
+                                    <Button
+                                        className="btn btn-success w-100"
+                                        onClick={handleComplete}
+                                    >
+                                        ✅ Завершить урок
+                                    </Button>
+                                </Col>
+                            ) : (
+                                <Col xs={12} md="auto">
+                                    <Link to={`/test/${lesson.testId}`}>
+                                        <Button
+                                            variant={isDark ? 'outline-light' : 'outline-primary'}
+                                            className="w-100"
+                                        >
+                                            📋 Пройти тест
+                                        </Button>
+                                    </Link>
+                                </Col>
+                            )
                         ) : (
                             <Col xs={12} md="auto">
                                 <Button
                                     className="btn btn-success w-100"
                                     onClick={handleComplete}
-                                    disabled={completed}
                                 >
-                                    {completed ? 'Урок завершён' : '✅ Завершить урок'}
+                                    ✅ Завершить урок
                                 </Button>
                             </Col>
                         )}
