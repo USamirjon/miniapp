@@ -1,40 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, Button, Alert, Form, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
 
-const PurchaseWallet = () => {
+const PurchaseWallet = ({ fetchWallet, telegramId }) => {
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    const [balance, setBalance] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
-
     const navigate = useNavigate();
-
-    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-
-    useEffect(() => {
-        if (tgUser?.id) {
-            fetchBalance(tgUser.id);
-        } else {
-            setError('Пользователь Telegram не найден');
-        }
-    }, []);
-
-    const fetchBalance = async (telegramId) => {
-        try {
-            const res = await axios.get(`${URL}/api/Transaction`, {
-                params: { telegramId }
-            });
-            setBalance(res.data);
-        } catch (err) {
-            console.error(err);
-            setError('Не удалось загрузить текущий баланс');
-        }
-    };
 
     const handleChange = (e) => {
         const value = e.target.value;
@@ -56,14 +32,14 @@ const PurchaseWallet = () => {
 
         try {
             await axios.post(`${URL}/api/Transaction`, {
-                telegramId: tgUser.id,
+                telegramId,
                 type: true,
                 total: numericAmount
             });
 
-            const newBalance = balance + numericAmount;
-            setBalance(newBalance);
-            setMessage(`Баланс успешно пополнен на ${numericAmount} монет`);
+            await fetchWallet(telegramId);
+
+            setMessage(`Баланс успешно пополнен на ${numericAmount}`);
             setSuccess(true);
         } catch (err) {
             console.error(err);
@@ -73,18 +49,10 @@ const PurchaseWallet = () => {
         }
     };
 
-    const handleBackToProfile = () => {
-        navigate('/profile');
-    };
-
     return (
         <div className="container mt-5">
             <Card className="p-4 shadow-sm">
                 <h4>Пополнить баланс</h4>
-
-                {balance !== null && (
-                    <p><strong>Текущий баланс:</strong> {balance} монет</p>
-                )}
 
                 <Form.Group controlId="formAmount">
                     <Form.Label>Сумма пополнения:</Form.Label>
@@ -123,7 +91,7 @@ const PurchaseWallet = () => {
                     <Button
                         variant="primary"
                         className="mt-3"
-                        onClick={handleBackToProfile}
+                        onClick={() => navigate('/profile')}
                     >
                         Вернуться в профиль
                     </Button>

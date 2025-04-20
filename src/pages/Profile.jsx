@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, ProgressBar, Image, Row, Col, Button } from 'react-bootstrap';
+import { Card, ProgressBar, Image, Row, Col, Button, Form } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { URL } from '../domain.ts';
@@ -22,11 +22,7 @@ const Profile = ({ theme, avatar, setAvatar }) => {
 
     useEffect(() => {
         const tg = window.Telegram?.WebApp;
-        if (!tg) {
-            setError('Telegram WebApp недоступен');
-            return;
-        }
-
+        if (!tg) return setError('Telegram WebApp недоступен');
         tg.expand();
 
         const tgUser = tg.initDataUnsafe?.user;
@@ -40,28 +36,12 @@ const Profile = ({ theme, avatar, setAvatar }) => {
 
     const fetchUserFromBackend = async (telegramId) => {
         try {
-            const res = await axios.get(URL + '/api/Users', {
+            const res = await axios.get(`${URL}/api/Users`, {
                 params: { telegramId }
             });
 
-            const data = res.data;
-            const userData = {
-                name: `${data.firstName} ${data.lastName}`,
-                username: data.userName,
-                telegramId: data.telegramId,
-                avatar: data.avatar || defaultAvatars[0],
-                xp: data.experience,
-                maxXp: 20000,
-                course: 'Frontend на React',
-                lessonsPassed: 7,
-                totalLessons: 10,
-                correctAnswers: 48,
-                totalAnswers: 60,
-                level: data.level
-            };
-
-            setUser(userData);
-            setAvatar(localStorage.getItem('avatar') || userData.avatar);
+            setUser(res.data);
+            setAvatar(localStorage.getItem('avatar') || res.data.avatar || defaultAvatars[0]);
         } catch (err) {
             console.error('Ошибка при получении данных:', err);
             setError('Не удалось загрузить профиль');
@@ -70,7 +50,7 @@ const Profile = ({ theme, avatar, setAvatar }) => {
 
     const fetchWallet = async (telegramId) => {
         try {
-            const res = await axios.get(URL + '/api/Transaction', {
+            const res = await axios.get(`${URL}/api/Transaction`, {
                 params: { telegramId }
             });
             setWallet(res.data);
@@ -80,8 +60,34 @@ const Profile = ({ theme, avatar, setAvatar }) => {
         }
     };
 
-    const selectDefaultAvatar = (url) => setAvatar(url);
+    const toggleNotifications = async () => {
+        try {
+            await axios.put(`${URL}/api/Users/notifications`, {
+                telegramId: user.telegramId,
+                turnNotification: !user.turnNotification
+            });
 
+            setUser(prev => ({ ...prev, turnNotification: !prev.turnNotification }));
+        } catch (err) {
+            console.error('Ошибка переключения уведомлений:', err);
+        }
+    };
+
+    const changeFrequency = async (e) => {
+        const value = parseInt(e.target.value);
+        try {
+            await axios.put(`${URL}/api/Users/frequency`, {
+                telegramId: user.telegramId,
+                notificationFrequency: value
+            });
+
+            setUser(prev => ({ ...prev, notificationFrequency: value }));
+        } catch (err) {
+            console.error('Ошибка смены частоты:', err);
+        }
+    };
+
+    const selectDefaultAvatar = (url) => setAvatar(url);
     const saveAvatar = () => {
         localStorage.setItem('avatar', avatar);
         setAvatar(avatar);
@@ -92,9 +98,7 @@ const Profile = ({ theme, avatar, setAvatar }) => {
     if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
     if (!user) return <div className="text-center mt-5">Загрузка профиля...</div>;
 
-    const xpPercent = Math.round((user.xp / user.maxXp) * 100);
-    const lessonsPercent = Math.round((user.lessonsPassed / user.totalLessons) * 100);
-    const correctPercent = Math.round((user.correctAnswers / user.totalAnswers) * 100);
+    const xpPercent = Math.round((user.experience / 20000) * 100);
 
     return (
         <div className="container mt-4">
@@ -107,16 +111,9 @@ const Profile = ({ theme, avatar, setAvatar }) => {
                             fluid
                             style={{ width: 100, height: 100, border: '2px solid #ccc' }}
                         />
-
-                        <Button
-                            size="sm"
-                            variant="outline-secondary"
-                            className="mt-2"
-                            onClick={() => setShowAvatars(!showAvatars)}
-                        >
+                        <Button size="sm" variant="outline-secondary" className="mt-2" onClick={() => setShowAvatars(!showAvatars)}>
                             {showAvatars ? 'Скрыть иконки' : 'Выбрать иконку'}
                         </Button>
-
                         {showAvatars && (
                             <div className="d-flex flex-wrap justify-content-center mt-2 gap-2">
                                 {defaultAvatars.map((icon, idx) => (
@@ -128,64 +125,57 @@ const Profile = ({ theme, avatar, setAvatar }) => {
                                             width: 50,
                                             height: 50,
                                             cursor: 'pointer',
-                                            border: avatar === icon ? '2px solid green' : '1px solid #aaa',
-                                            transition: 'border-color 0.3s'
+                                            border: avatar === icon ? '2px solid green' : '1px solid #aaa'
                                         }}
                                         onClick={() => selectDefaultAvatar(icon)}
-                                        alt={`Avatar ${idx + 1}`}
                                     />
                                 ))}
                             </div>
                         )}
-
                         {showAvatars && avatar && (
-                            <Button
-                                variant="success"
-                                size="sm"
-                                className="mt-2"
-                                onClick={saveAvatar}
-                            >
+                            <Button variant="success" size="sm" className="mt-2" onClick={saveAvatar}>
                                 Подтвердить иконку
                             </Button>
                         )}
                     </Col>
 
                     <Col xs={12} md={9}>
-                        <h4>{user.name}</h4>
-                        <p><strong>Курс:</strong> {user.course}</p>
-                        <p><strong>Username:</strong> @{user.username}</p>
-                        <p><strong>Telegram ID:</strong> {user.telegramId}</p>
-                        <div className="mb-2">
-                            <strong>Баланс: {wallet} монет</strong>
-                        </div>
-                        <Button
-                            variant="warning"
-                            className="mt-3"
-                            onClick={() => navigate('/purchase-wallet')}
-                        >
-                            Пополнить баланс
-                        </Button>
-
-
-                        <div className="mb-3 mt-3">
-                            <strong>Уровень: {user.level}</strong>
+                        <h4>{user.realFirstName} {user.realLastName}</h4>
+                        <p><strong>Номер:</strong> {user.phone}</p>
+                        <p><strong>Email:</strong> {user.email}</p>
+                        <p><strong>Баланс:</strong> 💰 {wallet}</p>
+                        <div className="mb-3">
+                            <strong>Уровень:</strong> {user.level}
                         </div>
 
-                        <div className="mb-2">
-                            <strong>Опыт: {user.xp}/{user.maxXp}</strong>
+                        <div className="mb-3">
+                            <strong>Опыт:</strong> {user.experience}/20000
                             <ProgressBar now={xpPercent} label={`${xpPercent}%`} className="mt-1"/>
                         </div>
 
-                        <div className="mb-2">
-                            <strong>Уроки: {user.lessonsPassed}/{user.totalLessons}</strong>
-                            <ProgressBar variant="info" now={lessonsPercent} label={`${lessonsPercent}%`}
-                                         className="mt-1"/>
-                        </div>
-
-                        <div className="mb-2">
-                            <strong>Правильных ответов: {correctPercent}%</strong>
-                            <ProgressBar variant="success" now={correctPercent} className="mt-1"/>
-                        </div>
+                        <Form>
+                            <Form.Check
+                                type="switch"
+                                id="notification-switch"
+                                label="Уведомления"
+                                checked={user.turnNotification}
+                                onChange={toggleNotifications}
+                                className="mb-3"
+                            />
+                            <Form.Group controlId="notif-frequency">
+                                <Form.Label>Частота уведомлений</Form.Label>
+                                <Form.Select
+                                    value={user.notificationFrequency}
+                                    onChange={changeFrequency}
+                                >
+                                    <option value={1}>Каждый день</option>
+                                    <option value={2}>Каждые 2 дня</option>
+                                    <option value={3}>Каждые 3 дня</option>
+                                    <option value={5}>Каждые 5 дней</option>
+                                    <option value={7}>Раз в неделю</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Form>
                     </Col>
                 </Row>
             </Card>
