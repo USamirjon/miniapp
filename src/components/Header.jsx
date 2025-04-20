@@ -1,30 +1,45 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaMoon, FaSun } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { Dropdown } from 'react-bootstrap';
+import { FaCog, FaWallet, FaBell, FaMoon, FaSun } from 'react-icons/fa';
 import ProfileIcon from './ProfileIcon';
+import './Header.css';
 
-const Header = ({ xp, xpDelta, theme, toggleTheme, avatar, wallet }) => {
+const Header = ({ xp, theme, toggleTheme, avatar, wallet, toggleNotifications, notificationsEnabled }) => {
     const isDark = theme === 'dark';
     const navigate = useNavigate();
 
     return (
-        <nav className={`navbar navbar-expand-lg ${isDark ? 'navbar-dark bg-dark' : 'navbar-light bg-light'} mb-4 rounded`}>
-            <div className="container-fluid justify-content-between">
-                <div>
-                    <Link className="navbar-brand" to="/">🧠 Обучение</Link>
-                    <Link className="nav-link d-inline" to="/courses">📚 Курсы</Link>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                    <button className="btn btn-outline-warning" onClick={() => navigate('/purchase-wallet')}>
-                        💰 {wallet}
-                    </button>
-                    <button className="btn btn-outline-secondary" onClick={toggleTheme}>
-                        {isDark ? <FaSun /> : <FaMoon />}
-                    </button>
-                    <Link to="/profile">
+        <nav className={`navbar fixed-top p-2 ${isDark ? 'navbar-dark' : 'navbar-light'}`}>
+            <div className="container-fluid justify-content-end">
+                <Dropdown align="end">
+                    <Dropdown.Toggle
+                        as="div"
+                        id="profile-dropdown"
+                        className={`profile-button ${isDark ? 'profile-dark' : 'profile-light'}`}
+                    >
                         <ProfileIcon xp={xp} theme={theme} avatarUrl={avatar} />
-                    </Link>
-                </div>
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu
+                        className={`shadow dropdown-menu-custom ${isDark ? 'dropdown-dark' : 'dropdown-light'}`}
+                    >
+                        <Dropdown.Item className="dropdown-item-custom" onClick={() => navigate('/purchase-wallet')}>
+                            <FaWallet className="me-2" /> Баланс: {wallet}
+                        </Dropdown.Item>
+                        <Dropdown.Item className="dropdown-item-custom" onClick={() => navigate('/profile')}>
+                            <FaCog className="me-2" /> Профиль
+                        </Dropdown.Item>
+                        <Dropdown.Item className="dropdown-item-custom" onClick={toggleNotifications}>
+                            <FaBell className="me-2" />
+                            Уведомления {notificationsEnabled ? 'вкл' : 'выкл'}
+                        </Dropdown.Item>
+                        <Dropdown.Item className="dropdown-item-custom" onClick={toggleTheme}>
+                            {isDark ? <FaSun className="me-2" /> : <FaMoon className="me-2" />}
+                            {isDark ? 'Светлая тема' : 'Тёмная тема'}
+                        </Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
             </div>
         </nav>
     );
