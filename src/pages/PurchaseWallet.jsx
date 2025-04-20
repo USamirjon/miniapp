@@ -4,13 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
 
-const PurchaseWallet = ({ fetchWallet, telegramId }) => {
+const PurchaseWallet = ({ fetchWallet, telegramId, theme }) => {
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
+
     const navigate = useNavigate();
+
+    const isDark = theme === 'dark';
+    const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
+    const inputBg = isDark ? 'bg-secondary text-light border-0' : '';
 
     const handleChange = (e) => {
         const value = e.target.value;
@@ -50,13 +55,14 @@ const PurchaseWallet = ({ fetchWallet, telegramId }) => {
     };
 
     return (
-        <div className="container mt-5">
-            <Card className="p-4 shadow-sm">
+        <div className={`container mt-5 ${isDark ? 'text-light' : 'text-dark'}`}>
+            <Card className={`p-4 shadow-sm ${cardBg}`}>
                 <h4>Пополнить баланс</h4>
 
-                <Form.Group controlId="formAmount">
+                <Form.Group controlId="formAmount" className="mt-3">
                     <Form.Label>Сумма пополнения:</Form.Label>
                     <Form.Control
+                        className={inputBg}
                         type="text"
                         value={amount}
                         onChange={handleChange}
@@ -97,8 +103,16 @@ const PurchaseWallet = ({ fetchWallet, telegramId }) => {
                     </Button>
                 )}
 
-                {message && <Alert variant="success" className="mt-3">{message}</Alert>}
-                {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
+                {message && (
+                    <Alert variant="success" className="mt-3">
+                        {message}
+                    </Alert>
+                )}
+                {error && (
+                    <Alert variant="danger" className="mt-3">
+                        {error}
+                    </Alert>
+                )}
             </Card>
         </div>
     );

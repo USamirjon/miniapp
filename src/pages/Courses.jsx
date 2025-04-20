@@ -6,6 +6,7 @@ import { URL } from '../domain.ts';
 
 const Courses = ({ theme }) => {
     const [myCourses, setMyCourses] = useState([]);
+    const [passedLessons, setPassedLessons] = useState([]);
     const [userId, setUserId] = useState(null);
 
     const navigate = useNavigate();
@@ -23,18 +24,27 @@ const Courses = ({ theme }) => {
         if (user) {
             setUserId(user.id);
             fetchMyCourses(user.id);
+            fetchPassedLessons(user.id);
         }
     }, []);
 
+    const fetchPassedLessons = async (telegramId) => {
+        try {
+            const { data } = await axios.get(`${URL}/api/Course/lessons-sucsess`, {
+                params: { telegramId }
+            });
+            const passed = data.map((entry) => entry.lessonId);
+            setPassedLessons(passed);
+        } catch (err) {
+            console.error('❌ Ошибка при получении пройденных уроков:', err);
+        }
+    };
+
     const fetchMyCourses = async (telegramId) => {
         try {
-            console.log('Запрос подписок:', `${URL}/api/Users/listSubscriptionCourses?telegramId=${telegramId}`);
-
             const { data: subscriptions } = await axios.get(`${URL}/api/Users/list-subscription-courses`, {
                 params: { telegramId }
             });
-
-            console.log('📦 Subscriptions:', subscriptions);
 
             if (!subscriptions || subscriptions.length === 0) {
                 setMyCourses([]);
@@ -44,18 +54,12 @@ const Courses = ({ theme }) => {
             const courseRequests = subscriptions.map(async (sub) => {
                 try {
                     const courseId = sub.courseId || sub.id || sub;
-                    console.log('Запрос курса:', `${URL}/api/Course?courseid=${courseId}`);
-
                     const { data } = await axios.get(`${URL}/api/Course`, {
                         params: { courseid: courseId }
                     });
                     return data;
                 } catch (err) {
                     console.warn(`❌ Ошибка при получении курса ${sub.courseId || sub.id || sub}:`, err.message);
-                    if (err.response) {
-                        console.warn('Статус:', err.response.status);
-                        console.warn('Данные:', err.response.data);
-                    }
                     return null;
                 }
             });
@@ -65,10 +69,6 @@ const Courses = ({ theme }) => {
             setMyCourses(filtered);
         } catch (err) {
             console.error('Ошибка при получении курсов пользователя:', err);
-            if (err.response) {
-                console.error('Статус:', err.response.status);
-                console.error('Данные:', err.response.data);
-            }
         }
     };
 
@@ -87,7 +87,10 @@ const Courses = ({ theme }) => {
                 )}
                 {myCourses.map((course) => {
                     const totalLessons = course.lessons?.length || 0;
-                    const lessonsPassed = 0; // если у тебя где-то хранится прогресс — сюда вставить
+                    const passedInThisCourse = course.lessons?.filter(lesson =>
+                        passedLessons.includes(lesson.id)
+                    ) || [];
+                    const lessonsPassed = passedInThisCourse.length;
                     const progressPercent = totalLessons > 0
                         ? Math.round((lessonsPassed / totalLessons) * 100)
                         : 0;
@@ -97,7 +100,7 @@ const Courses = ({ theme }) => {
                             <Card className={`${cardBg} shadow-sm h-100`}>
                                 <Card.Body>
                                     <Card.Title>{course.title}</Card.Title>
-                                    <Card.Subtitle className={`mb-2`}>
+                                    <Card.Subtitle className="mb-2">
                                         {course.briefDescription}
                                     </Card.Subtitle>
                                     <Card.Text>

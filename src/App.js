@@ -86,7 +86,7 @@ function App() {
                 <Route path="/test/:id" element={<Test key={theme} theme={theme} onFinish={gainXp} />} />
                 <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
                 <Route path="/upload" element={<FileUploader />} />
-                <Route path="/purchase-wallet" element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} />} />
+                <Route path="/purchase-wallet" element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} theme={theme} />} />
             </Routes>
         </div>
     );
