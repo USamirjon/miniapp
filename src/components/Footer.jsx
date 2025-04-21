@@ -1,24 +1,68 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaBook, FaHome, FaInfoCircle } from 'react-icons/fa';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Footer = ({ theme }) => {
     const navigate = useNavigate();
     const isDark = theme === 'dark';
 
-    const navClass = `d-flex justify-content-around p-2 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'} border-top`;
+    // Track hover state for each button
+    const [hoveredIndex, setHoveredIndex] = useState(null);
+
+    const getButtonStyle = (isHovered) => ({
+        transition: 'all 0.2s ease-in-out',
+        padding: '12px 20px',
+        borderRadius: '12px',
+        width: '100%',
+        backgroundColor: isDark ? (isHovered ? '#495057' : '#343a40') : (isHovered ? '#e2e6ea' : '#f0f0f0'),
+        color: isDark ? '#f8f9fa' : '#343a40',
+        border: `1px solid ${isDark ? '#555' : '#ccc'}`,
+        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+        cursor: isHovered ? 'pointer' : 'default',
+    });
+
+    const buttons = [
+        {
+            icon: <FaHome size={28} />,
+            onClick: () => navigate('/')
+        },
+        {
+            icon: <FaBook size={28} />,
+            onClick: () => navigate('/courses')
+        },
+        {
+            icon: <FaInfoCircle size={28} />,
+            onClick: () => window.open('https://bars.group', '_blank')
+        }
+    ];
 
     return (
-        <footer className={navClass} style={{ position: 'fixed', bottom: 0, width: '100%' }}>
-            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-                <FaHome size={20} />
-            </span>
-            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/courses')}>
-                <FaBook size={20} />
-            </span>
-            <span style={{ cursor: 'pointer' }} onClick={() => window.open('https://bars.group', '_blank')}>
-                <FaInfoCircle size={20} />
-            </span>
+        <footer
+            className="fixed-bottom py-3"
+            style={{ backgroundColor: 'transparent', borderTop: 'none' }}
+        >
+            <div className="container">
+                <div className="row justify-content-center"
+                     style={{
+                         backgroundColor: isDark ? 'rgba(33, 37, 41, 0.85)' : 'rgba(240, 240, 240, 0.85)',
+                         borderRadius: '16px',
+                         padding: '10px 5px',
+                     }}>
+                    {buttons.map((btn, idx) => (
+                        <div className="col-4 d-flex justify-content-center px-0" key={idx}>
+                            <div
+                                style={getButtonStyle(hoveredIndex === idx)}
+                                onClick={btn.onClick}
+                                onMouseEnter={() => setHoveredIndex(idx)}
+                                onMouseLeave={() => setHoveredIndex(null)}
+                            >
+                                <div className="text-center">{btn.icon}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </footer>
     );
 };
