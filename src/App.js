@@ -15,6 +15,7 @@ import axios from 'axios';
 import { URL } from './domain.ts';
 import Footer from './components/Footer';
 import ProfileEdit from './pages/ProfileEdit';
+import CourseContent from "./pages/CourseContent";
 
 function App() {
     const [xp, setXp] = useState(200);
@@ -94,8 +95,9 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home theme={theme} />} />
                 <Route path="/courses" element={<Courses theme={theme} />} />
-                <Route path="/course/:id/block" element={<Block theme={theme} />} />
-                <Route path="/course/:courseId/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
+                <Route path="/course/:id/coursecontent" element={<CourseContent theme={theme} />} />
+                <Route path="/block/:id" element={<Block theme={theme} />} />
+                <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
                 <Route path="/test/:id" element={<Test key={theme} theme={theme} onFinish={gainXp} />} />
                 <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
                 <Route path="/profile/edit" element={<ProfileEdit theme={theme} />} />
@@ -103,6 +105,7 @@ function App() {
                 <Route path="/purchase-wallet" element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} theme={theme} />} />
                 <Route path="/course/:id/details/*" element={<CourseDetails theme={theme} />} />
             </Routes>
+
 
             <Footer theme={theme} />
         </div>

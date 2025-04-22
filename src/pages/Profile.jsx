@@ -44,22 +44,17 @@ const Profile = ({ theme, avatar, setAvatar }) => {
 
     const fetchUserFromBackend = async (telegramId) => {
         try {
-            const res = await axios.get(`${URL}/api/Users`, {
-                params: { telegramId }
-            });
-            const data = res.data;
-            setUser(data);
-
-            // Get avatar from localStorage or user data or default to first avatar
+            const res = await axios.get(`${URL}/api/Users/${telegramId}`);
+            console.log('User data:', res.data);  // Убедитесь, что данные приходят
+            setUser(res.data);  // Сохраняем данные в состоянии
             const savedAvatar = localStorage.getItem('avatar');
             if (savedAvatar) {
                 setAvatar(savedAvatar);
-            } else if (data.avatar) {
-                setAvatar(data.avatar);
+            } else if (res.data.avatar) {
+                setAvatar(res.data.avatar);
             } else {
                 setAvatar(defaultAvatars[0]);
             }
-
             setLoading(false);
         } catch (err) {
             console.error('Ошибка при получении данных:', err);
@@ -67,6 +62,7 @@ const Profile = ({ theme, avatar, setAvatar }) => {
             setLoading(false);
         }
     };
+
 
     const fetchWallet = async (telegramId) => {
         try {

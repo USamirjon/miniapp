@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from 'react-bootstrap';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
 import { CheckCircleFill, XCircleFill } from 'react-bootstrap-icons';
 
 const Block = ({ theme }) => {
     const { id: blockId } = useParams();
+    const location = useLocation();
+    const blockTitleFromState = location.state?.blockTitle || 'Блок без названия';
+
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
     const buttonVariant = isDark ? 'light' : 'primary';
 
     const [lessons, setLessons] = useState([]);
     const [tests, setTests] = useState([]);
-    const [blockTitle, setBlockTitle] = useState('');
+    const [blockTitle, setBlockTitle] = useState(blockTitleFromState);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const navigate = useNavigate();
     const [userId, setUserId] = useState(null);
+
+    const handleLessonClick = (lessonId) => {
+        sessionStorage.setItem('currentBlockId', blockId);
+        navigate(`/lesson/${lessonId}`);
+    };
 
     useEffect(() => {
         const tg = window.Telegram?.WebApp;
@@ -31,51 +40,39 @@ const Block = ({ theme }) => {
             try {
                 setLoading(true);
 
-                const blockRes = await axios.get(`${URL}/api/Block`, {
+                const res = await axios.get(`${URL}/api/Courses/lessons`, {
                     params: { blockId }
                 });
 
-                const blockData = blockRes.data;
-                setBlockTitle(blockData?.title || '');
-                const rawLessons = blockData.lessons || [];
-                const rawTests = blockData.tests || [];
+                const rawLessons = res.data || [];
 
-                // Обогащаем уроки и тесты статусом прохождения
-                const fetchStatuses = async (items, type) => {
-                    return Promise.all(
-                        items.map(item =>
-                            axios.get(`${URL}/api/Course/${type}Sucsess`, {
-                                params: {
-                                    telegramId: userId,
-                                    [`${type}Id`]: item.id
-                                }
-                            })
+                const completedStatuses = userId
+                    ? await Promise.all(
+                        rawLessons.map(lesson =>
+                            axios
+                                .get(`${URL}/api/Courses/lesson-sucsess`, {
+                                    params: {
+                                        telegramId: userId,
+                                        lessonId: lesson.id,
+                                    },
+                                })
                                 .then(res => res.data)
                                 .catch(() => false)
                         )
-                    );
-                };
-
-                const completedLessonStatuses = userId
-                    ? await fetchStatuses(rawLessons, 'lesson')
+                    )
                     : rawLessons.map(() => false);
 
-                const completedTestStatuses = userId
-                    ? await fetchStatuses(rawTests, 'test')
-                    : rawTests.map(() => false);
+                setLessons(
+                    rawLessons.map((lesson, i) => ({
+                        ...lesson,
+                        isCompleted: completedStatuses[i],
+                    }))
+                );
 
-                setLessons(rawLessons.map((lesson, i) => ({
-                    ...lesson,
-                    isCompleted: completedLessonStatuses[i]
-                })));
-
-                setTests(rawTests.map((test, i) => ({
-                    ...test,
-                    isCompleted: completedTestStatuses[i]
-                })));
+                setTests([]); // если появится API — здесь можно получить тесты
 
             } catch (err) {
-                console.error('Ошибка при загрузке блока или уроков/тестов:', err);
+                console.error('Ошибка при загрузке уроков блока:', err);
                 setError('Не удалось загрузить данные блока.');
             } finally {
                 setLoading(false);
@@ -105,7 +102,6 @@ const Block = ({ theme }) => {
         <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}>
             <h2 className="mb-4">📦 Блок: {blockTitle}</h2>
 
-            {/* Уроки */}
             {lessons.length > 0 && <h4>📘 Уроки</h4>}
             <div className="row">
                 {lessons.map((lesson) => (
@@ -121,18 +117,18 @@ const Block = ({ theme }) => {
                                     )}
                                 </Card.Title>
                                 <Card.Text>{lesson.description}</Card.Text>
-                                <Link to={`/lesson/${lesson.id}`}>
-                                    <Button variant={buttonVariant}>
-                                        {lesson.isCompleted ? 'Повторить' : 'Начать'}
-                                    </Button>
-                                </Link>
+                                <Button
+                                    variant={buttonVariant}
+                                    onClick={() => handleLessonClick(lesson.id)}
+                                >
+                                    {lesson.isCompleted ? 'Повторить' : 'Начать'}
+                                </Button>
                             </Card.Body>
                         </Card>
                     </div>
                 ))}
             </div>
 
-            {/* Тесты */}
             {tests.length > 0 && <h4 className="mt-4">📝 Тесты</h4>}
             <div className="row">
                 {tests.map((test) => (

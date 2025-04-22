@@ -35,9 +35,7 @@ const ProfileEdit = ({ theme }) => {
 
     const fetchUserFromBackend = async (telegramId) => {
         try {
-            const res = await axios.get(`${URL}/api/Users`, {
-                params: { telegramId }
-            });
+            const res = await axios.get(`${URL}/api/Users/${telegramId}`);
             const data = res.data;
             setUser(data);
 

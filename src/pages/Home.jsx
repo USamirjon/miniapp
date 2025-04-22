@@ -38,7 +38,7 @@ const Home = () => {
 
     const fetchCourses = async (telegramId) => {
         try {
-            const res = await axios.get(URL + '/api/Course/all');
+            const res = await axios.get(URL + '/api/Courses/all');
             const data = res.data;
             setCourses(data);
             setFilteredCourses(data);
@@ -49,7 +49,7 @@ const Home = () => {
             const checkSubscriptions = data.map(course =>
                 limiter(async () => {
                     try {
-                        const response = await axios.get(URL + '/api/Course/isSubscribe', {
+                        const response = await axios.get(URL + '/api/Courses/is-subscribe', {
                             params: {
                                 telegramId,
                                 courseId: course.id
@@ -103,7 +103,7 @@ const Home = () => {
 
     const handleCourseClick = (id) => {
         if (purchasedCourses.includes(id)) {
-            navigate(`/course/${id}/block`);
+            navigate(`/course/${id}/coursecontent`);
         } else {
             navigate(`/course/${id}/details`);
         }
@@ -123,14 +123,13 @@ const Home = () => {
         return course.price > 0 ? 'primary' : 'info';
     };
 
-    const calculateDiscountPercentage = (price, discountPrice) => {
-        if (price > 0 && discountPrice && discountPrice < price) {
-            const discount = ((price - discountPrice) / price) * 100;
+    const calculateDiscountPercentage = (price, priceWithDiscount) => {
+        if (price > 0 && priceWithDiscount && priceWithDiscount < price) {
+            const discount = ((price - priceWithDiscount) / price) * 100;
             return Math.round(discount);
         }
         return 0;
     };
-
 
     return (
         <div className="container mt-4">
@@ -149,7 +148,6 @@ const Home = () => {
             <Collapse in={filtersOpen}>
                 <div className="mb-4">
                     <div className="d-flex flex-column gap-3">
-                        {/* Цена */}
                         <div className="d-flex flex-wrap justify-content-center gap-2">
                             <strong>Цена:</strong>
                             <ButtonGroup>
@@ -159,7 +157,6 @@ const Home = () => {
                             </ButtonGroup>
                         </div>
 
-                        {/* Дата */}
                         <div className="d-flex flex-wrap justify-content-center gap-2">
                             <strong>Дата:</strong>
                             <ButtonGroup>
@@ -169,7 +166,6 @@ const Home = () => {
                             </ButtonGroup>
                         </div>
 
-                        {/* Темы */}
                         <div className="d-flex flex-wrap justify-content-center gap-2">
                             <strong>Темы:</strong>
                             {topics.map((topic, idx) => (
@@ -189,9 +185,7 @@ const Home = () => {
 
             <Row>
                 {filteredCourses.map(course => {
-                    const discountPercentage = course.price && course.discountPrice
-                        ? calculateDiscountPercentage(course.price, course.discountPrice)
-                        : 0;
+                    const discountPercentage = calculateDiscountPercentage(course.price, course.priceWithDiscount);
 
                     return (
                         <Col key={course.id} md={6} lg={4} className="mb-4 position-relative">
@@ -202,7 +196,7 @@ const Home = () => {
                                         className="position-absolute top-0 end-0 m-2 rounded-pill"
                                         style={{ zIndex: 1 }}
                                     >
-                                        -{calculateDiscountPercentage(course.price, course.priceWithDiscount)}%
+                                        -{discountPercentage}%
                                     </Badge>
                                 )}
 
@@ -233,7 +227,6 @@ const Home = () => {
                                 </Card.Body>
                             </Card>
                         </Col>
-
                     );
                 })}
             </Row>

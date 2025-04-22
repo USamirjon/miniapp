@@ -35,7 +35,7 @@ const CourseDetails = ({ theme }) => {
 
     const fetchCourse = async (courseId) => {
         try {
-            const { data } = await axios.get(`${URL}/api/Course`, {
+            const { data } = await axios.get(`${URL}/api/Courses`, {
                 params: { courseid: courseId }
             });
             setCourse(data);
@@ -58,7 +58,7 @@ const CourseDetails = ({ theme }) => {
     const handleSubscribe = async () => {
         try {
             setLoading(true);
-            await axios.post(`${URL}/api/Course/subscribe`, {
+            await axios.post(`${URL}/api/Courses/subscribe`, {
                 courseId: id,
                 telegramId: userId
             });
@@ -91,6 +91,11 @@ const CourseDetails = ({ theme }) => {
             `✅ Успешная покупка! Было: ${balance}₽, списано: ${actualPrice}₽, осталось: ${newBalance}₽`
         );
         setBalance(newBalance);
+
+        // Задержка перед переходом, чтобы уведомление успело появиться
+        setTimeout(() => {
+            navigate(`/course/${id}/coursecontent`);
+        }, 2000);  // Задержка в 2 секунды
     };
 
     if (!course) return <p>Загрузка...</p>;
@@ -102,7 +107,7 @@ const CourseDetails = ({ theme }) => {
             <Card className={`${cardBg} shadow`}>
                 <Card.Body>
                     <Card.Title>{course.title}</Card.Title>
-                    <Card.Text>{course.fullDescription || course.briefDescription}</Card.Text>
+                    <Card.Text>{course.description || course.briefDescription}</Card.Text>
 
                     <Card.Text>
                         <strong>Цена:</strong>{' '}
@@ -140,10 +145,6 @@ const CourseDetails = ({ theme }) => {
                     )}
                 </Card.Body>
             </Card>
-
-            {(subscribed || actualPrice === 0) && (
-                <CourseContent blocks={course.blocks} theme={theme} />
-            )}
         </div>
     );
 };

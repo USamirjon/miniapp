@@ -30,7 +30,7 @@ const Courses = ({ theme }) => {
 
     const fetchPassedLessons = async (telegramId) => {
         try {
-            const { data } = await axios.get(`${URL}/api/Course/lessons-sucsess`, {
+            const { data } = await axios.get(`${URL}/api/Courses/lessons-sucsess`, {
                 params: { telegramId }
             });
             const passed = data.map((entry) => entry.lessonId);
@@ -54,10 +54,38 @@ const Courses = ({ theme }) => {
             const courseRequests = subscriptions.map(async (sub) => {
                 try {
                     const courseId = sub.courseId || sub.id || sub;
-                    const { data } = await axios.get(`${URL}/api/Course`, {
+                    const { data } = await axios.get(`${URL}/api/Courses`, {
                         params: { courseid: courseId }
                     });
-                    return data;
+
+                    // Fetch course blocks
+                    const blocksResponse = await axios.get(`${URL}/api/Courses/blocks-by-course`, {
+                        params: { courseId }
+                    });
+                    const blocks = blocksResponse.data;
+
+                    // Fetch lessons for each block
+                    const lessonRequests = blocks.map(async (block) => {
+                        const lessonsResponse = await axios.get(`${URL}/api/Courses/lessons`, {
+                            params: { blockId: block.id }
+                        });
+                        const lessons = lessonsResponse.data;
+
+                        // Check if each lesson is completed
+                        const lessonsWithStatus = await Promise.all(
+                            lessons.map(async (lesson) => {
+                                const successResponse = await axios.get(`${URL}/api/Courses/lesson-sucsess`, {
+                                    params: { telegramId, lessonId: lesson.id }
+                                });
+                                return { ...lesson, isCompleted: successResponse.data };
+                            })
+                        );
+
+                        return { block, lessons: lessonsWithStatus };
+                    });
+
+                    const blocksWithLessons = await Promise.all(lessonRequests);
+                    return { ...data, blocks: blocksWithLessons };
                 } catch (err) {
                     console.warn(`❌ Ошибка при получении курса ${sub.courseId || sub.id || sub}:`, err.message);
                     return null;
@@ -73,7 +101,7 @@ const Courses = ({ theme }) => {
     };
 
     const handleGoToCourse = (courseId) => {
-        navigate(`/course/${courseId}/block`);
+        navigate(`/course/${courseId}/coursecontent`);
     };
 
     return (
@@ -86,13 +114,14 @@ const Courses = ({ theme }) => {
                     </Col>
                 )}
                 {myCourses.map((course) => {
-                    const totalLessons = course.lessons?.length || 0;
-                    const passedInThisCourse = course.lessons?.filter(lesson =>
-                        passedLessons.includes(lesson.id)
-                    ) || [];
-                    const lessonsPassed = passedInThisCourse.length;
+                    const totalLessons = course.blocks?.reduce((acc, block) => acc + block.lessons.length, 0) || 0;
+                    const passedInThisCourse = course.blocks?.reduce((acc, block) => {
+                        const passedLessonsInBlock = block.lessons.filter(lesson => lesson.isCompleted);
+                        return acc + passedLessonsInBlock.length;
+                    }, 0) || 0;
+
                     const progressPercent = totalLessons > 0
-                        ? Math.round((lessonsPassed / totalLessons) * 100)
+                        ? Math.round((passedInThisCourse / totalLessons) * 100)
                         : 0;
 
                     return (
@@ -104,7 +133,7 @@ const Courses = ({ theme }) => {
                                         {course.briefDescription}
                                     </Card.Subtitle>
                                     <Card.Text>
-                                        <strong>Прогресс:</strong> {lessonsPassed}/{totalLessons}
+                                        <strong>Прогресс:</strong> {passedInThisCourse}/{totalLessons}
                                     </Card.Text>
 
                                     <ProgressBar

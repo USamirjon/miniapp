@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Row, Col } from 'react-bootstrap';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
 
 const Lesson = ({ onFinish, theme }) => {
-    const { id: lessonId, courseId } = useParams();
+    const { id: lessonId } = useParams(); // id — это lessonId
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [blockId, setBlockId] = useState(null);
     const [lesson, setLesson] = useState(null);
     const [lessonCompleted, setLessonCompleted] = useState(false);
-    const [testCompleted, setTestCompleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [userId, setUserId] = useState(null);
@@ -18,21 +20,31 @@ const Lesson = ({ onFinish, theme }) => {
 
     useEffect(() => {
         const tg = window.Telegram?.WebApp;
-        const telegramUser = tg?.initDataUnsafe?.user;
-        if (telegramUser?.id) {
-            setUserId(telegramUser.id);
+        const user = tg?.initDataUnsafe?.user;
+        if (user?.id) {
+            setUserId(user.id);
         }
     }, []);
 
     useEffect(() => {
-        const fetchLesson = async () => {
+        const fetchLessonAndBlockData = async () => {
             try {
                 setLoading(true);
-                const { data } = await axios.get(`${URL}/api/Course`, {
-                    params: { courseid: courseId }
+
+                const storedBlockId = sessionStorage.getItem('currentBlockId');
+                if (!storedBlockId) {
+                    setError('blockId не найден');
+                    return;
+                }
+
+                setBlockId(storedBlockId);
+
+                // Загружаем уроки для этого блока
+                const { data } = await axios.get(`${URL}/api/Courses/lessons`, {
+                    params: { blockId: storedBlockId }
                 });
 
-                const foundLesson = data.lessons.find(l => l.id === lessonId);
+                const foundLesson = data.find(l => l.id === lessonId);
                 if (foundLesson) {
                     setLesson(foundLesson);
                 } else {
@@ -46,27 +58,19 @@ const Lesson = ({ onFinish, theme }) => {
             }
         };
 
-        if (courseId && lessonId) fetchLesson();
-    }, [courseId, lessonId]);
+        if (lessonId) fetchLessonAndBlockData();
+    }, [lessonId]);
 
     useEffect(() => {
         const checkProgress = async () => {
             if (!userId || !lessonId || !lesson) return;
 
             try {
-                const [lessonRes, testRes] = await Promise.all([
-                    axios.get(`${URL}/api/Course/lessonSucsess`, {
-                        params: { telegramId: userId, lessonId }
-                    }),
-                    lesson.testId
-                        ? axios.get(`${URL}/api/Course/testSucsess`, {
-                            params: { telegramId: userId, testId: lesson.testId }
-                        })
-                        : Promise.resolve({ data: false })
-                ]);
+                const lessonRes = await axios.get(`${URL}/api/Courses/lesson-sucsess`, {
+                    params: { telegramId: userId, lessonId }
+                });
 
                 setLessonCompleted(lessonRes.data === true);
-                setTestCompleted(testRes.data === true);
             } catch (err) {
                 console.error('Ошибка при проверке прогресса:', err);
             }
@@ -79,7 +83,7 @@ const Lesson = ({ onFinish, theme }) => {
         if (!userId || !lessonId) return;
 
         try {
-            await axios.post(`${URL}/api/Course/testLesson`, {
+            await axios.post(`${URL}/api/Courses/lesson-sucsess`, {
                 telegramId: userId,
                 lessonId
             });
@@ -90,6 +94,10 @@ const Lesson = ({ onFinish, theme }) => {
         } catch (err) {
             console.error('Ошибка при завершении урока:', err);
         }
+    };
+
+    const handleBack = () => {
+        navigate(`/block/${blockId}`, { state: { blockTitle: lesson?.blockTitle } });
     };
 
     if (loading) {
@@ -110,37 +118,10 @@ const Lesson = ({ onFinish, theme }) => {
                     <Row className="mt-3 g-2">
                         {lessonCompleted ? (
                             <Col xs={12} md="auto">
-                                <Link to={`/course/${courseId}/lessons`}>
-                                    <Button
-                                        variant="success"
-                                        className="w-100"
-                                    >
-                                        ✅ Урок завершён — Вернуться к курсу
-                                    </Button>
-                                </Link>
+                                <Button variant="success" className="w-100" onClick={handleBack}>
+                                    ✅ Урок завершён — Вернуться в блок
+                                </Button>
                             </Col>
-                        ) : lesson.testId ? (
-                            testCompleted ? (
-                                <Col xs={12} md="auto">
-                                    <Button
-                                        className="btn btn-success w-100"
-                                        onClick={handleComplete}
-                                    >
-                                        ✅ Завершить урок
-                                    </Button>
-                                </Col>
-                            ) : (
-                                <Col xs={12} md="auto">
-                                    <Link to={`/test/${lesson.testId}`}>
-                                        <Button
-                                            variant={isDark ? 'outline-light' : 'outline-primary'}
-                                            className="w-100"
-                                        >
-                                            📋 Пройти тест
-                                        </Button>
-                                    </Link>
-                                </Col>
-                            )
                         ) : (
                             <Col xs={12} md="auto">
                                 <Button
