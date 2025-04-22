@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { URL } from '../domain.ts';
+import CourseContent from './CourseContent.jsx';
 
 const CourseDetails = ({ theme }) => {
     const { id } = useParams();
@@ -63,7 +64,6 @@ const CourseDetails = ({ theme }) => {
             });
             setSubscribed(true);
 
-            // Показываем сообщение только если курс бесплатный
             if (course.price === 0) {
                 setSuccessMessage('✅ Вы успешно подписались на данный курс!');
             }
@@ -85,9 +85,8 @@ const CourseDetails = ({ theme }) => {
         }
 
         const newBalance = balance - actualPrice;
-        await handleSubscribe(); // здесь вызываем подписку после оплаты
+        await handleSubscribe();
 
-        // Показываем сообщение только после успешной покупки
         setSuccessMessage(
             `✅ Успешная покупка! Было: ${balance}₽, списано: ${actualPrice}₽, осталось: ${newBalance}₽`
         );
@@ -96,7 +95,7 @@ const CourseDetails = ({ theme }) => {
 
     if (!course) return <p>Загрузка...</p>;
 
-    const actualPrice = course.discountPrice ?? course.price;
+    const actualPrice = course.discount ? course.priceWithDiscount : course.price;
 
     return (
         <div className="container mt-4">
@@ -108,15 +107,14 @@ const CourseDetails = ({ theme }) => {
                     <Card.Text>
                         <strong>Цена:</strong>{' '}
                         {actualPrice === 0 ? 'Бесплатно' : (
-                            <>
-                                {course.discount ? (
-                                    <>
-                                        <del>{course.price}₽</del> <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
-                                    </>
-                                ) : (
-                                    `${course.price}₽`
-                                )}
-                            </>
+                            course.discount ? (
+                                <>
+                                    <del>{course.price}₽</del>{' '}
+                                    <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
+                                </>
+                            ) : (
+                                `${course.price}₽`
+                            )
                         )}
                     </Card.Text>
 
@@ -128,11 +126,9 @@ const CourseDetails = ({ theme }) => {
                             <Spinner animation="border" size="sm" /> Загрузка...
                         </Button>
                     ) : subscribed ? (
-                        <>
-                            <Button variant="success" onClick={() => navigate(`/course/${id}/lessons`)}>
-                                Перейти к курсу
-                            </Button>
-                        </>
+                        <Button variant="success" onClick={() => navigate(`/course/${id}/block`)}>
+                            Перейти к курсу
+                        </Button>
                     ) : actualPrice === 0 ? (
                         <Button variant={buttonVariant} onClick={handleSubscribe}>
                             Подписаться бесплатно
@@ -142,9 +138,12 @@ const CourseDetails = ({ theme }) => {
                             Купить курс
                         </Button>
                     )}
-
                 </Card.Body>
             </Card>
+
+            {(subscribed || actualPrice === 0) && (
+                <CourseContent blocks={course.blocks} theme={theme} />
+            )}
         </div>
     );
 };

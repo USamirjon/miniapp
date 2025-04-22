@@ -73,7 +73,7 @@ const Courses = ({ theme }) => {
     };
 
     const handleGoToCourse = (courseId) => {
-        navigate(`/course/${courseId}/lessons`);
+        navigate(`/course/${courseId}/block`);
     };
 
     return (

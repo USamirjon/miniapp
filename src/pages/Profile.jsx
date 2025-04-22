@@ -1,11 +1,12 @@
 // Profile.js
 import React, { useEffect, useState } from 'react';
 import {
-    Card, ProgressBar, Image, Row, Col, Button, Form
+    Card, ProgressBar, Image, Row, Col, Button
 } from 'react-bootstrap';
 import axios from 'axios';
 import { URL } from '../domain.ts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 // Updated avatar URLs with different animal icons
 const defaultAvatars = [
@@ -17,6 +18,7 @@ const defaultAvatars = [
 ];
 
 const Profile = ({ theme, avatar, setAvatar }) => {
+    const navigate = useNavigate();
     const cardBg = theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark';
     const [user, setUser] = useState(null);
     const [wallet, setWallet] = useState(null);
@@ -24,17 +26,13 @@ const Profile = ({ theme, avatar, setAvatar }) => {
     const [showAvatars, setShowAvatars] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [notificationFrequency, setNotificationFrequency] = useState(1);
-    const [turnNotification, setTurnNotification] = useState(false);
-
     useEffect(() => {
         const tg = window.Telegram?.WebApp;
-        if (!tg) return setError('Telegram WebApp недоступен');
+        if (!tg) {
+            setError('Telegram WebApp недоступен');
+            return;
+        }
         tg.expand();
-
         const tgUser = tg.initDataUnsafe?.user;
         if (tgUser?.id) {
             fetchUserFromBackend(tgUser.id);
@@ -62,11 +60,6 @@ const Profile = ({ theme, avatar, setAvatar }) => {
                 setAvatar(defaultAvatars[0]);
             }
 
-            setFirstName(data.realFirstName || '');
-            setLastName(data.realLastName || '');
-            setEmail(data.email || '');
-            setNotificationFrequency(data.notificationFrequency || 1);
-            setTurnNotification(data.turnNotification || false);
             setLoading(false);
         } catch (err) {
             console.error('Ошибка при получении данных:', err);
@@ -87,62 +80,13 @@ const Profile = ({ theme, avatar, setAvatar }) => {
         }
     };
 
-    const updateNotification = async (val) => {
-        try {
-            await axios.patch(`${URL}/api/Users/notification-switch`, null, {
-                params: { telegramId: user.telegramId }
-            });
-            setTurnNotification(val);
-        } catch (err) {
-            console.error('Ошибка при переключении уведомлений:', err);
-        }
-    };
-
-    const updateFrequency = async (val) => {
-        try {
-            await axios.patch(`${URL}/api/Users/notification-frequency`, null, {
-                params: {
-                    telegramId: user.telegramId,
-                    frequency: val
-                }
-            });
-            setNotificationFrequency(val);
-        } catch (err) {
-            console.error('Ошибка при изменении частоты:', err);
-        }
-    };
-
-    const handleSaveProfile = async () => {
-        try {
-            const res = await axios.put(`${URL}/api/Users`, {
-                telegramId: user.telegramId,
-                email,
-                realFirstName: firstName,
-                realLastName: lastName,
-                notificationFrequency,
-                turnNotification
-            });
-
-            if (res.data.isSuccess) {
-                setUser(prev => ({
-                    ...prev,
-                    email,
-                    realFirstName: firstName,
-                    realLastName: lastName
-                }));
-                // Не закрываем форму, так как она теперь постоянно видна
-            } else {
-                alert('Не удалось сохранить изменения');
-            }
-        } catch (err) {
-            console.error('Ошибка при обновлении профиля:', err);
-            alert('Произошла ошибка при обновлении');
-        }
-    };
-
     const saveAvatar = () => {
         localStorage.setItem('avatar', avatar);
         setShowAvatars(false); // Hide avatar selection after saving
+    };
+
+    const handleEditProfile = () => {
+        navigate('/profile/edit');
     };
 
     if (error) return <div className="text-center mt-5 text-danger">{error}</div>;
@@ -212,71 +156,58 @@ const Profile = ({ theme, avatar, setAvatar }) => {
                     <Col xs={12} md={9}>
                         <div className="user-info mb-4">
                             <h4>{user.telegramName || 'Пользователь'}</h4>
+                            <Button
+                                variant="primary"
+                                className="mb-4"
+                                onClick={handleEditProfile}
+                            >
+                                Редактировать профиль
+                            </Button>
                         </div>
 
-                        <Form>
-                            <Row>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Имя</Form.Label>
-                                        <Form.Control type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Фамилия</Form.Label>
-                                        <Form.Control type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
+                        <div className="profile-details mb-4">
+                            <Row className="mb-3">
+                                <Col md={3}><strong>Имя:</strong></Col>
+                                <Col md={9}>{user.realFirstName || '—'}</Col>
                             </Row>
+                            <Row className="mb-3">
+                                <Col md={3}><strong>Фамилия:</strong></Col>
+                                <Col md={9}>{user.realLastName || '—'}</Col>
+                            </Row>
+                            <Row className="mb-3">
+                                <Col md={3}><strong>Email:</strong></Col>
+                                <Col md={9}>{user.email || '—'}</Col>
+                            </Row>
+                            <Row className="mb-3">
+                                <Col md={3}><strong>Уведомления:</strong></Col>
+                                <Col md={9}>{user.turnNotification ? 'Включены' : 'Выключены'}</Col>
+                            </Row>
+                            {user.turnNotification && (
+                                <Row className="mb-3">
+                                    <Col md={3}><strong>Частота уведомлений:</strong></Col>
+                                    <Col md={9}>
+                                        {user.notificationFrequency === 1 ? 'Каждый день' :
+                                            user.notificationFrequency === 2 ? 'Каждые 2 дня' :
+                                                user.notificationFrequency === 3 ? 'Каждые 3 дня' :
+                                                    user.notificationFrequency === 5 ? 'Каждые 5 дней' :
+                                                        user.notificationFrequency === 7 ? 'Раз в неделю' : '—'}
+                                    </Col>
+                                </Row>
+                            )}
+                        </div>
 
-                            <Form.Group className="mb-4">
-                                <Form.Label>Email</Form.Label>
-                                <Form.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                            </Form.Group>
-
-                            <Button variant="primary" className="mb-4" onClick={handleSaveProfile}>
-                                Сохранить данные
-                            </Button>
-
-                            <div className="stats-section mb-4">
-                                <h5 className="mb-3">Статистика</h5>
-                                <p><strong>Баланс:</strong> 💰 {wallet !== null ? wallet : 'Загрузка...'}</p>
-                                <p><strong>Уровень:</strong> {user.level || 0}</p>
-                                <p><strong>Опыт:</strong> {user.experience || 0}/20000</p>
-                                <ProgressBar
-                                    now={xpPercent}
-                                    label={`${xpPercent}%`}
-                                    variant="success"
-                                    className="mb-3"
-                                />
-                            </div>
-
-                            <div className="notification-section mb-4">
-                                <h5 className="mb-3">Настройки уведомлений</h5>
-                                <Form.Check
-                                    type="switch"
-                                    id="notification-switch"
-                                    label="Уведомления"
-                                    checked={turnNotification}
-                                    onChange={() => updateNotification(!turnNotification)}
-                                    className="mb-3"
-                                />
-                                <Form.Group controlId="notif-frequency" className="mb-3">
-                                    <Form.Label>Частота уведомлений</Form.Label>
-                                    <Form.Select
-                                        value={notificationFrequency}
-                                        onChange={(e) => updateFrequency(parseInt(e.target.value))}
-                                    >
-                                        <option value={1}>Каждый день</option>
-                                        <option value={2}>Каждые 2 дня</option>
-                                        <option value={3}>Каждые 3 дня</option>
-                                        <option value={5}>Каждые 5 дней</option>
-                                        <option value={7}>Раз в неделю</option>
-                                    </Form.Select>
-                                </Form.Group>
-                            </div>
-                        </Form>
+                        <div className="stats-section mb-4">
+                            <h5 className="mb-3">Статистика</h5>
+                            <p><strong>Баланс:</strong> 💰 {wallet !== null ? wallet : 'Загрузка...'}</p>
+                            <p><strong>Уровень:</strong> {user.level || 0}</p>
+                            <p><strong>Опыт:</strong> {user.experience || 0}/20000</p>
+                            <ProgressBar
+                                now={xpPercent}
+                                label={`${xpPercent}%`}
+                                variant="success"
+                                className="mb-3"
+                            />
+                        </div>
                     </Col>
                 </Row>
             </Card>

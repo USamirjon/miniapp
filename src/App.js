@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import LessonsPage from './pages/LessonsPage';
+import Block from './pages/Block';
 import Lesson from './pages/Lesson';
 import Test from './pages/Test';
 import Profile from './pages/Profile';
@@ -78,9 +78,8 @@ function App() {
 
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
-
     return (
-        <div className="container " style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
+        <div className="container" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
             <Header
                 xp={xp}
                 xpDelta={xpDelta}
@@ -93,21 +92,19 @@ function App() {
             />
 
             <Routes>
-                <Route path="/" element={<Home theme={theme}/>}/>
-                <Route path="/courses" element={<Courses theme={theme}/>}/>
-                <Route path="/course/:id/details" element={<CourseDetails theme={theme}/>}/>
-                <Route path="/course/:id/lessons" element={<LessonsPage theme={theme}/>}/>
-                <Route path="/course/:courseId/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme}/>}/>
-                <Route path="/test/:id" element={<Test key={theme} theme={theme} onFinish={gainXp}/>}/>
-                <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar}/>}/>
-                <Route path="/profile/edit" element={<ProfileEdit onSave={() => {
-                }}/>}/>
-                <Route path="/upload" element={<FileUploader/>}/>
-                <Route path="/purchase-wallet"
-                       element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} theme={theme}/>}/>
+                <Route path="/" element={<Home theme={theme} />} />
+                <Route path="/courses" element={<Courses theme={theme} />} />
+                <Route path="/course/:id/block" element={<Block theme={theme} />} />
+                <Route path="/course/:courseId/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
+                <Route path="/test/:id" element={<Test key={theme} theme={theme} onFinish={gainXp} />} />
+                <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
+                <Route path="/profile/edit" element={<ProfileEdit theme={theme} />} />
+                <Route path="/upload" element={<FileUploader />} />
+                <Route path="/purchase-wallet" element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} theme={theme} />} />
+                <Route path="/course/:id/details/*" element={<CourseDetails theme={theme} />} />
             </Routes>
 
-            <Footer theme={theme}/>
+            <Footer theme={theme} />
         </div>
     );
 }

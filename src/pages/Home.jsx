@@ -103,7 +103,7 @@ const Home = () => {
 
     const handleCourseClick = (id) => {
         if (purchasedCourses.includes(id)) {
-            navigate(`/course/${id}/lessons`);
+            navigate(`/course/${id}/block`);
         } else {
             navigate(`/course/${id}/details`);
         }
