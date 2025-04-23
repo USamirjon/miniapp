@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, Button, Alert, ProgressBar } from 'react-bootstrap';
 import axios from 'axios';
 import { URL } from '../domain.ts';
@@ -7,6 +7,8 @@ import { URL } from '../domain.ts';
 const Test = ({ theme }) => {
     const { id: testId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const testDataFromState = location.state?.testData;
 
     const [questions, setQuestions] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -15,47 +17,85 @@ const Test = ({ theme }) => {
     const [correctCount, setCorrectCount] = useState(0);
     const [finished, setFinished] = useState(false);
     const [resultSent, setResultSent] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [userId, setUserId] = useState(null);
 
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
 
     useEffect(() => {
+        const tg = window.Telegram?.WebApp;
+        const telegramUser = tg?.initDataUnsafe?.user;
+        if (telegramUser?.id) {
+            setUserId(telegramUser.id);
+        }
+    }, []);
+
+    useEffect(() => {
         const fetchQuestions = async () => {
             try {
-                const { data } = await axios.get(`${URL}/api/Course/questions`, {
+                setLoading(true);
+
+                // If we have the test data from state, use it directly
+                if (testDataFromState && testDataFromState.questions) {
+                    console.log("Using test data from state:", testDataFromState);
+                    setQuestions(testDataFromState.questions);
+                    setLoading(false);
+                    return;
+                }
+
+                // Otherwise fetch from API
+                const { data } = await axios.get(`${URL}/api/Courses/test-block-id`, {
                     params: { testId },
                 });
-                setQuestions(data);
+
+                if (data && data.questions) {
+                    setQuestions(data.questions);
+                } else {
+                    console.error('Неожиданный формат данных:', data);
+                }
             } catch (error) {
                 console.error('Ошибка при загрузке теста:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchQuestions();
-    }, [testId]);
+    }, [testId, testDataFromState]);
 
-    const sendResult = useCallback(async (result) => {
+    const sendResult = useCallback(async (result, percentageCorrect) => {
         try {
-            const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-            if (!telegramId || resultSent) return;
+            if (!userId || resultSent) return;
 
-            await axios.post(`${URL}/api/Course/testResult`, {
-                telegramId,
+            console.log("Sending test result:", {
+                telegramId: userId,
                 testId,
                 result,
+                percentageIsTrue: percentageCorrect
+            });
+
+            // Using the correct endpoint and parameter names based on your API
+            await axios.post(`${URL}/api/Courses/test-result`, {
+                telegramId: userId,
+                testId,
+                result,
+                percentageIsTrue: percentageCorrect
             });
 
             setResultSent(true);
         } catch (error) {
             console.error('Ошибка при отправке результата теста:', error);
         }
-    }, [resultSent, testId]);
+    }, [resultSent, testId, userId]);
 
     useEffect(() => {
-        if (!finished) return;
+        if (!finished || !questions.length) return;
 
+        const percentageCorrect = Math.round((correctCount / questions.length) * 100);
         const passed = correctCount > questions.length / 2;
-        sendResult(passed);
+
+        sendResult(passed, percentageCorrect);
     }, [finished, correctCount, questions.length, sendResult]);
 
     const currentQuestion = questions[currentIndex];
@@ -89,19 +129,22 @@ const Test = ({ theme }) => {
         setResultSent(false);
     };
 
-    if (!questions.length) return <p className="text-center mt-4">Загрузка вопросов...</p>;
+    if (loading) return <p className="text-center mt-4">Загрузка вопросов...</p>;
+
+    if (!questions.length) return <p className="text-center mt-4">Нет доступных вопросов для этого теста.</p>;
 
     if (finished) {
         const passed = correctCount > questions.length / 2;
+        const percentageCorrect = Math.round((correctCount / questions.length) * 100);
 
         return (
             <div className="container mt-4 text-center">
                 <h2>{passed ? '🎉 Поздравляем!' : '🫶 Не расстраивайся!'}</h2>
-                <p>Ты ответил правильно на {correctCount} из {questions.length} вопросов.</p>
+                <p>Ты ответил правильно на {correctCount} из {questions.length} вопросов ({percentageCorrect}%).</p>
 
                 {passed ? (
                     <Button variant="success" className="m-2" onClick={() => navigate(-1)}>
-                        Вернуться к курсу
+                        Вернуться к блоку
                     </Button>
                 ) : (
                     <>
@@ -109,7 +152,7 @@ const Test = ({ theme }) => {
                             Повторить тест
                         </Button>
                         <Button variant="secondary" className="m-2" onClick={() => navigate(-1)}>
-                            Вернуться к курсу
+                            Вернуться к блоку
                         </Button>
                     </>
                 )}
@@ -121,14 +164,14 @@ const Test = ({ theme }) => {
         <div className="container mt-4">
             <Card className={`${cardBg} shadow-sm`}>
                 <Card.Body>
-                    <Card.Title>{currentQuestion.title}</Card.Title>
+                    <Card.Title>{currentQuestion?.title}</Card.Title>
 
                     <ProgressBar
                         now={(currentIndex / questions.length) * 100}
                         className="mb-3"
                     />
 
-                    {currentQuestion.answers.map((ans) => (
+                    {currentQuestion?.answers?.map((ans) => (
                         <Button
                             key={ans.id}
                             variant={
