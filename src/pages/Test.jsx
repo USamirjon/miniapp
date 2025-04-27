@@ -17,8 +17,10 @@ const Test = ({ theme }) => {
     const [correctCount, setCorrectCount] = useState(0);
     const [finished, setFinished] = useState(false);
     const [resultSent, setResultSent] = useState(false);
+    const [blockCompleted, setBlockCompleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState(null);
+    const [blockId, setBlockId] = useState(null);
 
     const isDark = theme === 'dark';
     const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
@@ -28,6 +30,12 @@ const Test = ({ theme }) => {
         const telegramUser = tg?.initDataUnsafe?.user;
         if (telegramUser?.id) {
             setUserId(telegramUser.id);
+        }
+
+        // Получаем blockId из sessionStorage, как это делается в компоненте Lesson
+        const storedBlockId = sessionStorage.getItem('currentBlockId');
+        if (storedBlockId) {
+            setBlockId(storedBlockId);
         }
     }, []);
 
@@ -40,6 +48,12 @@ const Test = ({ theme }) => {
                 if (testDataFromState && testDataFromState.questions) {
                     console.log("Using test data from state:", testDataFromState);
                     setQuestions(testDataFromState.questions);
+
+                    // Если у нас есть testDataFromState, то извлекаем blockId из него, если он доступен
+                    if (testDataFromState.blockId) {
+                        setBlockId(testDataFromState.blockId);
+                    }
+
                     setLoading(false);
                     return;
                 }
@@ -51,6 +65,11 @@ const Test = ({ theme }) => {
 
                 if (data && data.questions) {
                     setQuestions(data.questions);
+
+                    // Если в данных теста есть blockId, сохраняем его
+                    if (data.blockId) {
+                        setBlockId(data.blockId);
+                    }
                 } else {
                     console.error('Неожиданный формат данных:', data);
                 }
@@ -63,6 +82,29 @@ const Test = ({ theme }) => {
 
         fetchQuestions();
     }, [testId, testDataFromState]);
+
+    // Функция для завершения блока
+    const completeBlock = useCallback(async () => {
+        if (!userId || !blockId || blockCompleted) return;
+
+        try {
+            console.log("Отправка запроса на завершение блока:", {
+                blockId,
+                telegramId: userId
+            });
+
+            const response = await axios.patch(`${URL}/api/Courses/block-finish`, null, {
+                params: { blockId, telegramId: userId }
+            });
+
+            if (response.data?.isSuccess) {
+                console.log("Блок успешно завершен");
+                setBlockCompleted(true);
+            }
+        } catch (error) {
+            console.error('Ошибка при завершении блока:', error);
+        }
+    }, [userId, blockId, blockCompleted]);
 
     const sendResult = useCallback(async (result, percentageCorrect) => {
         try {
@@ -84,10 +126,15 @@ const Test = ({ theme }) => {
             });
 
             setResultSent(true);
+
+            // Если тест пройден успешно, отправляем запрос на завершение блока
+            if (result) {
+                await completeBlock();
+            }
         } catch (error) {
             console.error('Ошибка при отправке результата теста:', error);
         }
-    }, [resultSent, testId, userId]);
+    }, [resultSent, testId, userId, completeBlock]);
 
     useEffect(() => {
         if (!finished || !questions.length) return;

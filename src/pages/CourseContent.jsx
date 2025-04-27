@@ -3,10 +3,12 @@ import { Card, Button } from 'react-bootstrap';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
+import { CheckCircleFill, XCircleFill } from 'react-bootstrap-icons';
 
 const CourseContent = ({ theme }) => {
     const { id: courseId } = useParams();
     const [blocks, setBlocks] = useState([]);
+    const [blockStatuses, setBlockStatuses] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -15,13 +17,36 @@ const CourseContent = ({ theme }) => {
     const buttonVariant = isDark ? 'light' : 'primary';
 
     useEffect(() => {
+        const tg = window.Telegram?.WebApp;
+        const telegramUser = tg?.initDataUnsafe?.user;
+
         const fetchBlocks = async () => {
             try {
                 setLoading(true);
                 const response = await axios.get(`${URL}/api/Courses/blocks-by-course`, {
                     params: { courseId }
                 });
-                setBlocks(response.data);
+
+                const sortedBlocks = response.data.sort((a, b) => a.numberOfBLock - b.numberOfBLock);
+                setBlocks(sortedBlocks);
+
+                if (telegramUser?.id) {
+                    const statuses = {};
+                    await Promise.all(sortedBlocks.map(async (block) => {
+                        try {
+                            const statusRes = await axios.get(`${URL}/api/Users/is-active-block-course`, {
+                                params: {
+                                    telegramId: telegramUser.id,
+                                    blockId: block.id
+                                }
+                            });
+                            statuses[block.id] = statusRes.data;
+                        } catch {
+                            statuses[block.id] = true; // если ошибка — считаем активным
+                        }
+                    }));
+                    setBlockStatuses(statuses);
+                }
             } catch (err) {
                 console.error("Ошибка при получении блоков курса:", err);
                 setError('Не удалось загрузить блоки курса.');
@@ -55,18 +80,31 @@ const CourseContent = ({ theme }) => {
         <div className="container mt-4">
             <h3 className="mb-4">📦 Содержание курса</h3>
             <div className="row">
-                {blocks.map((block) => (
-                    <div className="col-md-6 mb-4" key={block.id}>
-                        <Card className={`${cardBg} shadow-sm`}>
-                            <Card.Body>
-                                <Card.Title>{block.title}</Card.Title>
-                                <Link to={`/block/${block.id}`} state={{ blockTitle: block.title }}>
-                                    <Button variant={buttonVariant}>Перейти к блоку</Button>
-                                </Link>
-                            </Card.Body>
-                        </Card>
-                    </div>
-                ))}
+                {blocks.map((block) => {
+                    const isActive = blockStatuses[block.id];
+                    const title = `Блок ${block.numberOfBLock}. ${block.title}`;
+                    const buttonText = isActive ? 'Перейти к блоку' : 'Повторить';
+
+                    return (
+                        <div className="col-md-6 mb-4" key={block.id}>
+                            <Card className={`${cardBg} shadow-sm`}>
+                                <Card.Body>
+                                    <Card.Title className="d-flex justify-content-between align-items-center">
+                                        {title}
+                                        {isActive === false ? (
+                                            <CheckCircleFill color="green" size={22} />
+                                        ) : (
+                                            <XCircleFill color="red" size={22} />
+                                        )}
+                                    </Card.Title>
+                                    <Link to={`/block/${block.id}`} state={{ blockTitle: block.title }}>
+                                        <Button variant={buttonVariant}>{buttonText}</Button>
+                                    </Link>
+                                </Card.Body>
+                            </Card>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

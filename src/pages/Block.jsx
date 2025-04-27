@@ -23,9 +23,13 @@ const Block = ({ theme }) => {
     const navigate = useNavigate();
     const [userId, setUserId] = useState(null);
 
-    const handleLessonClick = (lessonId) => {
+    const handleLessonClick = (lessonId, isLastLessonWithoutTest) => {
         sessionStorage.setItem('currentBlockId', blockId);
-        navigate(`/lesson/${lessonId}`);
+        navigate(`/lesson/${lessonId}`, {
+            state: {
+                isLastLessonWithoutTest // Передаем флаг о том, что это последний урок без теста
+            }
+        });
     };
 
     useEffect(() => {
@@ -35,6 +39,28 @@ const Block = ({ theme }) => {
             setUserId(telegramUser.id);
         }
     }, []);
+
+    // Track block visit
+    useEffect(() => {
+        const trackBlockVisit = async () => {
+            if (!blockId || !userId) return;
+
+            try {
+                await axios.post(`${URL}/api/Courses/visit-block`, {
+                    blockId,
+                    telegramId: userId
+                });
+                console.log('Block visit tracked successfully');
+            } catch (err) {
+                console.error('Error tracking block visit:', err);
+                // Don't set error state to avoid disrupting user experience
+            }
+        };
+
+        if (blockId && userId) {
+            trackBlockVisit();
+        }
+    }, [blockId, userId]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,7 +104,6 @@ const Block = ({ theme }) => {
                     if (testRes.status === 200 && testRes.data) {
                         setTest(testRes.data);
 
-                        // Check if the test is completed for this user
                         if (userId) {
                             try {
                                 const testStatusRes = await axios.get(`${URL}/api/Courses/test-sucsess`, {
@@ -127,35 +152,55 @@ const Block = ({ theme }) => {
         );
     }
 
+    // Определяем, есть ли тест в блоке
+    const hasTest = test !== null;
+
     return (
         <div className={`container mt-4 ${isDark ? 'text-light' : 'text-dark'}`}>
             <h2 className="mb-4">📦 Блок: {blockTitle}</h2>
 
             {lessons.length > 0 && <h4>📘 Уроки</h4>}
             <div className="row">
-                {lessons.map((lesson) => (
-                    <div className="col-md-6 mb-4" key={lesson.id}>
-                        <Card className={`${cardBg} shadow-sm h-100`}>
-                            <Card.Body>
-                                <Card.Title className="d-flex justify-content-between align-items-center">
-                                    {lesson.title}
-                                    {lesson.isCompleted ? (
-                                        <CheckCircleFill color="green" size={22} />
-                                    ) : (
-                                        <XCircleFill color="red" size={22} />
-                                    )}
-                                </Card.Title>
-                                <Card.Text>{lesson.description}</Card.Text>
-                                <Button
-                                    variant={buttonVariant}
-                                    onClick={() => handleLessonClick(lesson.id)}
-                                >
-                                    {lesson.isCompleted ? 'Повторить' : 'Начать'}
-                                </Button>
-                            </Card.Body>
-                        </Card>
-                    </div>
-                ))}
+                {lessons.map((lesson, index) => {
+                    const prevCompleted = index === 0 || lessons[index - 1].isCompleted;
+                    const isLocked = !prevCompleted;
+
+                    // Определяем, является ли этот урок последним в блоке
+                    const isLastLesson = index === lessons.length - 1;
+
+                    // Флаг для определения, является ли это последним уроком без теста
+                    const isLastLessonWithoutTest = isLastLesson && !hasTest;
+
+                    return (
+                        <div className="col-md-6 mb-4" key={lesson.id}>
+                            <Card className={`${cardBg} shadow-sm h-100`}>
+                                <Card.Body>
+                                    <Card.Title className="d-flex justify-content-between align-items-center">
+                                        {lesson.title}
+                                        {lesson.isCompleted ? (
+                                            <CheckCircleFill color="green" size={22} />
+                                        ) : (
+                                            <XCircleFill color="red" size={22} />
+                                        )}
+                                    </Card.Title>
+                                    <Card.Text>{lesson.description}</Card.Text>
+                                    <Button
+                                        variant={buttonVariant}
+                                        disabled={isLocked}
+                                        onClick={() => !isLocked && handleLessonClick(lesson.id, isLastLessonWithoutTest)}
+                                    >
+                                        {isLocked
+                                            ? 'Завершите предыдущий урок'
+                                            : lesson.isCompleted
+                                                ? 'Повторить'
+                                                : 'Начать'}
+                                    </Button>
+
+                                </Card.Body>
+                            </Card>
+                        </div>
+                    );
+                })}
             </div>
 
             {test && (
@@ -175,14 +220,26 @@ const Block = ({ theme }) => {
                                     </Card.Title>
                                     <Card.Text>
                                         {testCompleted
-                                            ? 'Тест успешно пройден! Можешь пройти его еще раз для закрепления.'
+                                            ? 'Тест успешно пройден! Повторное прохождение отключено.'
                                             : 'Пройди тест, чтобы закрепить знания!'}
                                     </Card.Text>
-                                    <Link to={`/test/${test.id}`} state={{ testData: test }}>
-                                        <Button variant={buttonVariant}>
-                                            {testCompleted ? 'Пройти еще раз' : 'Пройти тест'}
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        variant={buttonVariant}
+                                        disabled={!lessons.every(l => l.isCompleted) || testCompleted}
+                                        onClick={() => {
+                                            if (lessons.every(l => l.isCompleted) && !testCompleted) {
+                                                navigate(`/test/${test.id}`, {
+                                                    state: { testData: test}
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        {!lessons.every(l => l.isCompleted)
+                                            ? 'Завершите все уроки'
+                                            : testCompleted
+                                                ? 'Тест пройден'
+                                                : 'Пройти тест'}
+                                    </Button>
                                 </Card.Body>
                             </Card>
                         </div>

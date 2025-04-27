@@ -189,43 +189,51 @@ const Home = () => {
 
                     return (
                         <Col key={course.id} md={6} lg={4} className="mb-4 position-relative">
-                            <Card className={`${cardBg} shadow`}>
-                                {course.discount && course.priceWithDiscount && (
-                                    <Badge
-                                        bg="danger"
-                                        className="position-absolute top-0 end-0 m-2 rounded-pill"
-                                        style={{ zIndex: 1 }}
-                                    >
-                                        -{discountPercentage}%
-                                    </Badge>
-                                )}
+                            <Col key={course.id} md={6} lg={4} className="mb-4 position-relative">
+                                <Card
+                                    className={`${cardBg} shadow`}
+                                    onClick={() => handleCourseClick(course.id)}
+                                    style={{ cursor: 'pointer' }}  // Добавляем стиль курсора, чтобы было понятно, что карточка кликабельна
+                                >
+                                    {course.discount && course.priceWithDiscount && (
+                                        <Badge
+                                            bg="danger"
+                                            className="position-absolute top-0 end-0 m-2 rounded-pill"
+                                            style={{ zIndex: 1 }}
+                                        >
+                                            -{discountPercentage}%
+                                        </Badge>
+                                    )}
 
-                                <Card.Body>
-                                    <Card.Title>{course.title}</Card.Title>
-                                    <Card.Text>{course.description}</Card.Text>
-                                    <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
+                                    <Card.Body>
+                                        <Card.Title>{course.title}</Card.Title>
+                                        <Card.Text>{course.description}</Card.Text>
+                                        <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
 
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            {course.discount && course.priceWithDiscount ? (
-                                                <>
-                                                    <del>{course.price}₽</del>{' '}
-                                                    <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
-                                                </>
-                                            ) : (
-                                                <span>{course.price === 0 ? 'Бесплатно' : `${course.price}₽`}</span>
-                                            )}
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                {course.discount && course.priceWithDiscount ? (
+                                                    <>
+                                                        <del>{course.price}₽</del>{' '}
+                                                        <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
+                                                    </>
+                                                ) : (
+                                                    <span>{course.price === 0 ? 'Бесплатно' : `${course.price}₽`}</span>
+                                                )}
+                                            </div>
+                                            <Button
+                                                variant={getButtonVariant(course)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Предотвращаем всплытие события, чтобы клик по кнопке не активировал карточку
+                                                    handleCourseClick(course.id);
+                                                }}
+                                            >
+                                                {getButtonText(course)}
+                                            </Button>
                                         </div>
-                                    </div>
-
-                                    <Button
-                                        variant={getButtonVariant(course)}
-                                        onClick={() => handleCourseClick(course.id)}
-                                    >
-                                        {getButtonText(course)}
-                                    </Button>
-                                </Card.Body>
-                            </Card>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
                         </Col>
                     );
                 })}
