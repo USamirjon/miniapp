@@ -53,7 +53,6 @@ const Block = ({ theme }) => {
                 console.log('Block visit tracked successfully');
             } catch (err) {
                 console.error('Error tracking block visit:', err);
-                // Don't set error state to avoid disrupting user experience
             }
         };
 
@@ -183,7 +182,7 @@ const Block = ({ theme }) => {
                                             <XCircleFill color="red" size={22} />
                                         )}
                                     </Card.Title>
-                                    <Card.Text>{lesson.description}</Card.Text>
+                                    <Card.Text>{lesson.briefDescription}</Card.Text>
                                     <Button
                                         variant={buttonVariant}
                                         disabled={isLocked}

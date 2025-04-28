@@ -131,7 +131,7 @@ const CourseDetails = ({ theme }) => {
                             <Spinner animation="border" size="sm" /> Загрузка...
                         </Button>
                     ) : subscribed ? (
-                        <Button variant="success" onClick={() => navigate(`/course/${id}/block`)}>
+                        <Button variant="success" onClick={() => navigate(`/course/${id}/coursecontent`)}>
                             Перейти к курсу
                         </Button>
                     ) : actualPrice === 0 ? (

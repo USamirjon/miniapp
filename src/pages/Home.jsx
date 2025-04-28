@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     Button, Card, Row, Col,
-    Collapse, Form, ButtonGroup, Badge
+    Form, Badge
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,11 +13,7 @@ const Home = () => {
     const [filteredCourses, setFilteredCourses] = useState([]);
     const [purchasedCourses, setPurchasedCourses] = useState([]);
     const [userId, setUserId] = useState(null);
-    const [topics, setTopics] = useState([]);
-    const [priceFilter, setPriceFilter] = useState(null);
-    const [dateOrder, setDateOrder] = useState(null);
-    const [selectedTopics, setSelectedTopics] = useState([]);
-    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [showFreeOnly, setShowFreeOnly] = useState(false);
 
     const navigate = useNavigate();
     const theme = localStorage.getItem('theme') || 'light';
@@ -42,7 +38,6 @@ const Home = () => {
             const data = res.data;
             setCourses(data);
             setFilteredCourses(data);
-            setTopics([...new Set(data.map(c => c.topic))]);
 
             const limiter = limit(5);
 
@@ -70,36 +65,15 @@ const Home = () => {
         }
     };
 
-    const toggleTopic = (topic) => {
-        setSelectedTopics(prev =>
-            prev.includes(topic)
-                ? prev.filter(t => t !== topic)
-                : [...prev, topic]
-        );
-    };
-
-    const applyFilters = () => {
-        let result = [...courses];
-
-        if (priceFilter === 'free') result = result.filter(c => c.price === 0);
-        else if (priceFilter === 'paid') result = result.filter(c => c.price > 0);
-
-        if (selectedTopics.length) {
-            result = result.filter(c => selectedTopics.includes(c.topic));
-        }
-
-        if (dateOrder === 'newest') {
-            result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        } else if (dateOrder === 'oldest') {
-            result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        }
-
-        setFilteredCourses(result);
-    };
-
     useEffect(() => {
-        applyFilters();
-    }, [priceFilter, selectedTopics, dateOrder, courses]);
+        if (courses.length) {
+            if (showFreeOnly) {
+                setFilteredCourses(courses.filter(c => c.price === 0));
+            } else {
+                setFilteredCourses(courses);
+            }
+        }
+    }, [showFreeOnly, courses]);
 
     const handleCourseClick = (id) => {
         if (purchasedCourses.includes(id)) {
@@ -131,57 +105,35 @@ const Home = () => {
         return 0;
     };
 
+    // Переключатель для фильтра Free
+    const toggleFreeOnly = () => {
+        setShowFreeOnly(!showFreeOnly);
+    };
+
     return (
         <div className="container mt-4">
-            <h2 className="mb-2">📚 Доступные курсы</h2>
+            <h2 className="mb-3">📚 Доступные курсы</h2>
 
-            <div className="mb-3 text-center">
-                <Button
-                    variant="primary"
-                    onClick={() => setFiltersOpen(!filtersOpen)}
-                    className="rounded-pill px-4"
-                >
-                    {filtersOpen ? 'Скрыть фильтры' : 'Показать фильтры'}
-                </Button>
-            </div>
-
-            <Collapse in={filtersOpen}>
-                <div className="mb-4">
-                    <div className="d-flex flex-column gap-3">
-                        <div className="d-flex flex-wrap justify-content-center gap-2">
-                            <strong>Цена:</strong>
-                            <ButtonGroup>
-                                <Button variant={priceFilter === 'free' ? 'secondary' : 'outline-secondary'} onClick={() => setPriceFilter('free')}>Бесплатные</Button>
-                                <Button variant={priceFilter === 'paid' ? 'secondary' : 'outline-secondary'} onClick={() => setPriceFilter('paid')}>Платные</Button>
-                                <Button variant={!priceFilter ? 'secondary' : 'outline-secondary'} onClick={() => setPriceFilter(null)}>Все</Button>
-                            </ButtonGroup>
-                        </div>
-
-                        <div className="d-flex flex-wrap justify-content-center gap-2">
-                            <strong>Дата:</strong>
-                            <ButtonGroup>
-                                <Button variant={dateOrder === 'newest' ? 'secondary' : 'outline-secondary'} onClick={() => setDateOrder('newest')}>Новые</Button>
-                                <Button variant={dateOrder === 'oldest' ? 'secondary' : 'outline-secondary'} onClick={() => setDateOrder('oldest')}>Старые</Button>
-                                <Button variant={!dateOrder ? 'secondary' : 'outline-secondary'} onClick={() => setDateOrder(null)}>Без сорт.</Button>
-                            </ButtonGroup>
-                        </div>
-
-                        <div className="d-flex flex-wrap justify-content-center gap-2">
-                            <strong>Темы:</strong>
-                            {topics.map((topic, idx) => (
-                                <Form.Check
-                                    inline
-                                    key={idx}
-                                    label={topic}
-                                    type="checkbox"
-                                    checked={selectedTopics.includes(topic)}
-                                    onChange={() => toggleTopic(topic)}
-                                />
-                            ))}
-                        </div>
+            <div className="d-flex justify-content-end mb-4">
+                <div className="d-flex align-items-center">
+                    <span className="fw-bold me-2" style={{ fontSize: '1.1rem' }}>Free</span>
+                    <div
+                        className="form-check form-switch"
+                        onClick={toggleFreeOnly}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            id="free-toggle"
+                            checked={showFreeOnly}
+                            onChange={() => {}} // Добавлен пустой обработчик для избежания предупреждений
+                            style={{ cursor: 'pointer' }}
+                        />
                     </div>
                 </div>
-            </Collapse>
+            </div>
 
             <Row>
                 {filteredCourses.map(course => {
@@ -189,51 +141,49 @@ const Home = () => {
 
                     return (
                         <Col key={course.id} md={6} lg={4} className="mb-4 position-relative">
-                            <Col key={course.id} md={6} lg={4} className="mb-4 position-relative">
-                                <Card
-                                    className={`${cardBg} shadow`}
-                                    onClick={() => handleCourseClick(course.id)}
-                                    style={{ cursor: 'pointer' }}  // Добавляем стиль курсора, чтобы было понятно, что карточка кликабельна
-                                >
-                                    {course.discount && course.priceWithDiscount && (
-                                        <Badge
-                                            bg="danger"
-                                            className="position-absolute top-0 end-0 m-2 rounded-pill"
-                                            style={{ zIndex: 1 }}
-                                        >
-                                            -{discountPercentage}%
-                                        </Badge>
-                                    )}
+                            <Card
+                                className={`${cardBg} shadow`}
+                                onClick={() => handleCourseClick(course.id)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                {course.discount && course.priceWithDiscount && (
+                                    <Badge
+                                        bg="danger"
+                                        className="position-absolute top-0 end-0 m-2 rounded-pill"
+                                        style={{ zIndex: 1 }}
+                                    >
+                                        -{discountPercentage}%
+                                    </Badge>
+                                )}
 
-                                    <Card.Body>
-                                        <Card.Title>{course.title}</Card.Title>
-                                        <Card.Text>{course.description}</Card.Text>
-                                        <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
+                                <Card.Body>
+                                    <Card.Title className="pe-3">{course.title}</Card.Title>
+                                    <Card.Text>{course.briefDescription}</Card.Text>
+                                    <Card.Text><strong>Тема:</strong> {course.topic}</Card.Text>
 
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                {course.discount && course.priceWithDiscount ? (
-                                                    <>
-                                                        <del>{course.price}₽</del>{' '}
-                                                        <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
-                                                    </>
-                                                ) : (
-                                                    <span>{course.price === 0 ? 'Бесплатно' : `${course.price}₽`}</span>
-                                                )}
-                                            </div>
-                                            <Button
-                                                variant={getButtonVariant(course)}
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Предотвращаем всплытие события, чтобы клик по кнопке не активировал карточку
-                                                    handleCourseClick(course.id);
-                                                }}
-                                            >
-                                                {getButtonText(course)}
-                                            </Button>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {course.discount && course.priceWithDiscount ? (
+                                                <>
+                                                    <del>{course.price}₽</del>{' '}
+                                                    <span className="text-success fw-bold">{course.priceWithDiscount}₽</span>
+                                                </>
+                                            ) : (
+                                                <span>{course.price === 0 ? 'Бесплатно' : `${course.price}₽`}</span>
+                                            )}
                                         </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
+                                        <Button
+                                            variant={getButtonVariant(course)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCourseClick(course.id);
+                                            }}
+                                        >
+                                            {getButtonText(course)}
+                                        </Button>
+                                    </div>
+                                </Card.Body>
+                            </Card>
                         </Col>
                     );
                 })}

@@ -80,7 +80,7 @@ function App() {
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
     return (
-        <div className="container" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+        <div className="container">
             <Header
                 xp={xp}
                 xpDelta={xpDelta}

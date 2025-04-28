@@ -89,7 +89,6 @@ const Profile = ({ theme, avatar, setAvatar }) => {
     if (loading) return <div className="text-center mt-5">Загрузка профиля...</div>;
     if (!user) return <div className="text-center mt-5">Пользователь не найден</div>;
 
-    const xpPercent = Math.round((user?.experience || 0) / 20000 * 100);
 
     return (
         <div className="container mt-4">
@@ -193,16 +192,9 @@ const Profile = ({ theme, avatar, setAvatar }) => {
                         </div>
 
                         <div className="stats-section mb-4">
-                            <h5 className="mb-3">Статистика</h5>
                             <p><strong>Баланс:</strong> 💰 {wallet !== null ? wallet : 'Загрузка...'}</p>
                             <p><strong>Уровень:</strong> {user.level || 0}</p>
-                            <p><strong>Опыт:</strong> {user.experience || 0}/20000</p>
-                            <ProgressBar
-                                now={xpPercent}
-                                label={`${xpPercent}%`}
-                                variant="success"
-                                className="mb-3"
-                            />
+                            <p><strong>Опыт:</strong> {user.experience || 0}</p>
                         </div>
                     </Col>
                 </Row>

@@ -1,6 +1,5 @@
-// Lesson.jsx
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Row, Col } from 'react-bootstrap';
+import { Button, Row, Col, Container, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { URL } from '../domain.ts';
@@ -19,7 +18,6 @@ const Lesson = ({ onFinish, theme }) => {
     const [userId, setUserId] = useState(null);
 
     const isDark = theme === 'dark';
-    const cardBg = isDark ? 'bg-dark text-light' : 'bg-light text-dark';
 
     useEffect(() => {
         const tg = window.Telegram?.WebApp;
@@ -141,35 +139,140 @@ const Lesson = ({ onFinish, theme }) => {
         }
     };
 
-    if (loading) return <div className="container mt-4 text-center"><h5>Загрузка...</h5></div>;
-    if (error || !lesson) return <div className="container mt-4 text-danger"><h5>{error || 'Урок не найден'}</h5></div>;
+    if (loading) return (
+        <Container className="py-3 text-center">
+            <Spinner animation="border" role="status" />
+            <p className="mt-2">Загрузка...</p>
+        </Container>
+    );
+
+    if (error || !lesson) return (
+        <Container className="py-3">
+            <div className="alert alert-danger" role="alert">
+                <h5 className="mb-0">{error || 'Урок не найден'}</h5>
+            </div>
+        </Container>
+    );
 
     return (
-        <div className="container mt-4">
-            <Card className={`${cardBg} shadow-sm`}>
-                <Card.Body>
-                    <Card.Title>{lesson.title}</Card.Title>
-                    <Card.Text>{lesson.description}</Card.Text>
-                    <Row className="mt-3 g-2">
+        <Container fluid className="px-0 py-3">
+            <div className={`lesson-container ${isDark ? 'text-light' : 'text-dark'}`}>
+                <div className="px-3 mb-3">
+                    <h2>{lesson.title}</h2>
+                </div>
+
+                <div
+                    className="lesson-content mb-4 lesson-html-content"
+                    dangerouslySetInnerHTML={{ __html: lesson.description }}
+                />
+
+                <div className="px-3">
+                    <Row className="mt-4 g-2 justify-content-center">
                         {lessonCompleted ? (
-                            <Col xs={12} md="auto">
-                                <Button variant="success" className="w-100" onClick={() => navigate(`/block/${blockId}`)}>
+                            <Col xs={12}>
+                                <Button
+                                    variant="success"
+                                    className="w-100 py-2"
+                                    onClick={() => navigate(`/block/${blockId}`)}
+                                >
                                     ✅ Урок завершён — Вернуться в блок
                                 </Button>
                             </Col>
                         ) : (
-                            <Col xs={12} md="auto">
-                                <Button className="btn btn-success w-100" onClick={handleComplete}>
-                                    {isLastLessonWithoutTest
-                                        ? '✅ Завершить урок и блок'
-                                        : '✅ Завершить урок'}
+                            <Col xs={12}>
+                                <Button
+                                    variant="success"
+                                    className="w-100 py-2"
+                                    onClick={handleComplete}
+                                >
+                                    ✅ {isLastLessonWithoutTest
+                                    ? 'Завершить урок и блок'
+                                    : 'Завершить урок'}
                                 </Button>
                             </Col>
                         )}
                     </Row>
-                </Card.Body>
-            </Card>
-        </div>
+                </div>
+            </div>
+
+            {/* Add CSS styles for proper HTML content display */}
+            <style>{`
+                .lesson-html-content {
+                    width: 100%;
+                }
+                
+                .lesson-html-content table {
+                    width: 100%;
+                    margin-bottom: 1rem;
+                    table-layout: fixed;
+                    border-collapse: collapse;
+                }
+                
+                .lesson-html-content table th,
+                .lesson-html-content table td {
+                    padding: 0.75rem;
+                    border: 1px solid #dee2e6;
+                    vertical-align: top;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    font-size: 0.95rem;
+                }
+                
+                .lesson-html-content table th {
+                    background-color: rgba(0, 0, 0, 0.05);
+                    font-weight: bold;
+                }
+                
+                .lesson-html-content ul,
+                .lesson-html-content ol {
+                    padding-left: 1.5rem;
+                    margin-bottom: 1rem;
+                }
+                
+                .lesson-html-content ul li,
+                .lesson-html-content ol li {
+                    margin-bottom: 0.5rem;
+                }
+                
+                .lesson-html-content p {
+                    margin-bottom: 1rem;
+                }
+                
+                .lesson-html-content strong,
+                .lesson-html-content b {
+                    font-weight: bold;
+                }
+                
+                .lesson-html-content em,
+                .lesson-html-content i {
+                    font-style: italic;
+                }
+                
+                /* Table responsiveness */
+                @media (max-width: 767px) {
+                    .lesson-html-content table {
+                        table-layout: fixed;
+                        font-size: 0.85rem;
+                    }
+                    
+                    .lesson-html-content table th,
+                    .lesson-html-content table td {
+                        padding: 0.5rem;
+                    }
+                }
+                
+                /* 2x2 table special handling */
+                .lesson-html-content table tr:nth-child(1) td:nth-child(1),
+                .lesson-html-content table tr:nth-child(1) td:nth-child(2) {
+                    width: 50%;
+                }
+                
+                /* Ensure proper padding in the container */
+                .lesson-html-content {
+                    padding: 0 0.75rem;
+                }
+            `}</style>
+        </Container>
     );
 };
 
