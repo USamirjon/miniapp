@@ -1,32 +1,21 @@
-/* Profile button styling */
-.profile-button {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Минимальные стили для хедера */
+.navbar {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Стили для аватара */
+.avatar-toggle {
     cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
 }
 
-.profile-button:hover {
+.avatar-toggle:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.profile-button::after {
-    display: none !important; /* Remove dropdown arrow */
+/* Скрываем стрелочку дропдауна */
+.dropdown-toggle::after {
+    display: none !important;
 }
 
-.profile-dark {
-    background-color: #343a40;
-    color: #f8f9fa;
-}
-
-.profile-light {
-    background-color: #f8f9fa;
-    color: #343a40;
-}

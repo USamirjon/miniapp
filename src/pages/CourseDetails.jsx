@@ -102,14 +102,26 @@ const CourseDetails = ({ theme }) => {
 
     const actualPrice = course.discount ? course.priceWithDiscount : course.price;
 
+    // Функция для правильного отображения описания с учетом переносов строк
+    const formatDescription = (text) => {
+        if (!text) return '';
+        // Разбиваем текст на абзацы по переносам строк
+        return text.split('\n').map((paragraph, index) => (
+            <p key={index} className="mb-2">{paragraph}</p>
+        ));
+    };
+
     return (
         <div className="container mt-4">
             <Card className={`${cardBg} shadow`}>
                 <Card.Body>
-                    <Card.Title>{course.title}</Card.Title>
-                    <Card.Text>{course.description || course.briefDescription}</Card.Text>
+                    <Card.Title className="mb-3">{course.title}</Card.Title>
 
-                    <Card.Text>
+                    <div className="course-description mb-4">
+                        {formatDescription(course.description || course.briefDescription)}
+                    </div>
+
+                    <Card.Text className="mb-3">
                         <strong>Цена:</strong>{' '}
                         {actualPrice === 0 ? 'Бесплатно' : (
                             course.discount ? (
@@ -123,8 +135,8 @@ const CourseDetails = ({ theme }) => {
                         )}
                     </Card.Text>
 
-                    {error && <Alert variant="danger">{error}</Alert>}
-                    {successMessage && <Alert variant="success">{successMessage}</Alert>}
+                    {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
+                    {successMessage && <Alert variant="success" className="mb-3">{successMessage}</Alert>}
 
                     {loading ? (
                         <Button variant={buttonVariant} disabled>

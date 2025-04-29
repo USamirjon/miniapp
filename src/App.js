@@ -16,20 +16,23 @@ import { URL } from './domain.ts';
 import Footer from './components/Footer';
 import ProfileEdit from './pages/ProfileEdit';
 import CourseContent from "./pages/CourseContent";
+import WelcomeScreen from './pages/WelcomeScreen'; // ⬅️ Импорт приветственного экрана
 
 function App() {
-    const [xp, setXp] = useState(200);
-    const [xpDelta, setXpDelta] = useState(null);
     const [theme, setTheme] = useState('light');
     const [avatar, setAvatar] = useState(localStorage.getItem('avatar') || 'https://i.pravatar.cc/100?u=user1');
     const [wallet, setWallet] = useState(0);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-    const toggleNotifications = () => setNotificationsEnabled((prev) => !prev);
+    const [showWelcome, setShowWelcome] = useState(false);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
         applyTheme(savedTheme);
+
+        const hasVisited = localStorage.getItem('hasVisited');
+        if (!hasVisited) {
+            setShowWelcome(true);
+        }
 
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
@@ -71,41 +74,36 @@ function App() {
         applyTheme(newTheme);
     };
 
-    const gainXp = (amount) => {
-        setXp((prev) => prev + amount);
-        setXpDelta(`+${amount} XP`);
-        setTimeout(() => setXpDelta(null), 2000);
-    };
-
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
     return (
         <div className="container">
             <Header
-                xp={xp}
-                xpDelta={xpDelta}
                 theme={theme}
                 toggleTheme={toggleTheme}
                 avatar={avatar}
                 wallet={wallet}
-                notificationsEnabled={notificationsEnabled}
-                toggleNotifications={toggleNotifications}
             />
 
             <Routes>
-                <Route path="/" element={<Home theme={theme} />} />
-                <Route path="/courses" element={<Courses theme={theme} />} />
-                <Route path="/course/:id/coursecontent" element={<CourseContent theme={theme} />} />
-                <Route path="/block/:id" element={<Block theme={theme} />} />
-                <Route path="/lesson/:id" element={<Lesson onFinish={gainXp} theme={theme} />} />
-                <Route path="/test/:id" element={<Test key={theme} theme={theme} onFinish={gainXp} />} />
-                <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
-                <Route path="/profile/edit" element={<ProfileEdit theme={theme} />} />
-                <Route path="/upload" element={<FileUploader />} />
-                <Route path="/purchase-wallet" element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} theme={theme} />} />
-                <Route path="/course/:id/details/*" element={<CourseDetails theme={theme} />} />
+                {showWelcome ? (
+                    <Route path="*" element={<WelcomeScreen />} />
+                ) : (
+                    <>
+                        <Route path="/" element={<Home theme={theme} />} />
+                        <Route path="/courses" element={<Courses theme={theme} />} />
+                        <Route path="/course/:id/coursecontent" element={<CourseContent theme={theme} />} />
+                        <Route path="/block/:id" element={<Block theme={theme} />} />
+                        <Route path="/lesson/:id" element={<Lesson theme={theme} />} />
+                        <Route path="/test/:id" element={<Test key={theme} theme={theme} />} />
+                        <Route path="/profile" element={<Profile theme={theme} avatar={avatar} setAvatar={setAvatar} />} />
+                        <Route path="/profile/edit" element={<ProfileEdit theme={theme} />} />
+                        <Route path="/upload" element={<FileUploader />} />
+                        <Route path="/purchase-wallet" element={<PurchaseWallet fetchWallet={fetchWallet} telegramId={telegramId} theme={theme} />} />
+                        <Route path="/course/:id/details/*" element={<CourseDetails theme={theme} />} />
+                    </>
+                )}
             </Routes>
-
 
             <Footer theme={theme} />
         </div>
