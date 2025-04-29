@@ -83,6 +83,7 @@ function App() {
                 toggleTheme={toggleTheme}
                 avatar={avatar}
                 wallet={wallet}
+                showWelcome={showWelcome}
             />
 
             <Routes>
